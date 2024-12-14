@@ -1,0 +1,108 @@
+html {
+  font-size: 14px;
+}
+
+@media (min-width: 768px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
+  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+}
+
+html {
+  position: relative;
+  min-height: 100%;
+}
+
+body {
+  margin-bottom: 60px;
+}
+
+.login-container-row {
+    display: flex;
+    flex-direction: row;
+    padding-top: 20px;
+    padding-bottom: 20px;
+}
+
+.login-container-column {
+    display: flex;
+    flex-direction: column;
+    max-width: 350px;
+    min-width: 350px;
+    margin-left: auto;
+    margin-right: auto;
+    justify-content: center;
+    box-shadow: 0 0 10px #333;
+    border-radius: 15px 15px 15px 15px;
+    border: 0.5px solid #0d1725;
+    width: 367px;
+    background-color: rgba(92, 107, 115, .25);
+}
+
+.form-floating {
+    width: 90%;
+    margin-left: 5%;
+    margin-right: 5%;
+    justify-content: center;
+}
+
+.checkbox {
+    margin-left: 5%;
+    padding-left: 5px;
+}
+
+.form-control {
+    font-size: 1.25rem;
+}
+
+.login-button {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    margin-left: 5%;
+    margin-right: 5%;
+    margin-bottom: 20px;
+    margin-top: 10px;
+    font-size: 25px;
+    font-weight: 500;
+    justify-content: center;
+    align-items: center;
+    border: 1px solid #0d1725;
+    border-radius: 10px;
+    height: 50px;
+    max-width: 90%;
+}
+
+.login-links {
+    margin-left: 5%;
+    margin-top: 5%;
+    box-sizing: border-box !important;
+    font-family: 'Open Sans', sans-serif !important;
+    opacity: .8;
+    font-weight: 500 !important;
+    font-size: 1.25rem !important;
+}
+
+    .login-links a:hover {
+        color: black !important;
+    }
+
+.login-logo {
+    text-align: center;
+    padding-top: 50px;
+    padding-bottom: 10px;
+    font-weight: 800;
+    font-size: 2.5rem;
+}
+
+.text-danger {
+    color: #bababa !important;
+    font-weight: 700 !important;
+    font-size: 1.2rem;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}

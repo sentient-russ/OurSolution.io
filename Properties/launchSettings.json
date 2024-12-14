@@ -1,0 +1,26 @@
+﻿{
+  "profiles": {
+    "OurSolution": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "http://localhost:9313;https://localhost:9314"
+    }
+  },
+  "Kestrel": {
+    "environmentVariables": {
+      "ASPNETCORE_ENVIRONMENT": "Development"
+    },
+    "Endpoints": {
+      "MyHttpsEndpoint": {
+        "Url": "http://162.205.232.101:5007;https://162.205.232.101:5007",
+        "SslProtocols": [
+          "Tls12",
+          "Tls13"
+        ]
+      }
+    }
+  }
+}
