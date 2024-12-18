@@ -170,7 +170,6 @@ namespace os.Services
             speakerString += speaker.SpeakerStatus;
             return speakerString;
         }
-
         /*
          * Gets the next speaker id
          */

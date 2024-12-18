@@ -75,8 +75,14 @@ namespace os.Areas.Identity.Pages.Account
             ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
 
             // gets the user by email for role based redirect
-           //var user = await _userManager.FindByEmailAsync(Input.Email);
+            //var user = await _userManager.FindByEmailAsync(Input.Email);
             var user = _dbConnectionService.GetUserDetailsByEmail(Input.Email);
+
+            if (user.ActiveStatus == "Disabled")
+            {
+                _logger.LogWarning("User account locked out.");
+                return RedirectToPage("./Lockout");
+            }
 
             if (ModelState.IsValid)
             {

@@ -3,8 +3,10 @@
 @{
     ViewData["Title"] = "Email Confirmation";
 }
-<center>
-    <h1>@ViewData["Title"]</h1>
-    <partial name="_StatusMessage" model="Model.StatusMessage" />
-    <p>You may now <strong><a href="/Identity/Account/Login">Login</a></strong>.</p>
-</center>
+<div class="margin-top-120">
+    <center>
+        <h1>@ViewData["Title"]</h1>
+        <partial name="_StatusMessage" model="Model.StatusMessage" />
+        <p>You may now <strong><a href="/Identity/Account/Login">Login</a></strong>.</p>
+    </center>
+</div>
