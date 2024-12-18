@@ -206,7 +206,8 @@ namespace os.Services
             //log the event, must take place before the update to capture before and after state
             string beforeUpdate = UserDetailsToString(GetUserDetailsById(userIn.Id));
             string afterUpdate = UserDetailsToString(userIn);
-            CreateLog(userIn.Id, "UpdateUserDetailsAsync() called.", beforeUpdate, afterUpdate);
+            AppUser user = GetUserDetailsById(userIn.Id);
+            CreateLog(user.Email, "UpdateUserDetailsAsync() called.", beforeUpdate, afterUpdate);
 
             bool Succeeded = false;
             try

@@ -157,14 +157,14 @@ namespace os.Controllers
             }
             return View("Index");
         }
-        //[Authorize(Roles = "Administrator")]
-        //[HttpGet]
-        //public async Task<IActionResult> ViewLogs(string? Id)
-        //{
-        //    List<LogModel> logs = new List<LogModel>();
-        //    //logs = _dbConnectorService.GetLogs();
-        //    //logs.Reverse();
-        //    return View(logs);
-        //}
+        [Authorize(Roles = "Administrator")]
+        [HttpGet]
+        public async Task<IActionResult> ViewLogs()
+        {
+            List<LogModel> logs = new List<LogModel>();
+            logs = _dbConnectionService.GetLogs();
+            logs.Reverse();
+            return View(logs);
+        }
     }
 }
