@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Data.Common;
 using System.Linq;
 using System.Text;
 using System.Text.Encodings.Web;
@@ -19,6 +20,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Logging;
 using os.Areas.Identity.Data;
+using os.Services;
 
 namespace os.Areas.Identity.Pages.Account
 {
@@ -30,13 +32,15 @@ namespace os.Areas.Identity.Pages.Account
         private readonly IUserEmailStore<AppUser> _emailStore;
         private readonly ILogger<RegisterModel> _logger;
         private readonly IEmailSender _emailSender;
+        private readonly DbConnectionService _dbConnectionService;
 
         public RegisterModel(
             UserManager<AppUser> userManager,
             IUserStore<AppUser> userStore,
             SignInManager<AppUser> signInManager,
             ILogger<RegisterModel> logger,
-            IEmailSender emailSender)
+            IEmailSender emailSender,
+            DbConnectionService dbConnectionService)
         {
             _userManager = userManager;
             _userStore = userStore;
@@ -44,6 +48,7 @@ namespace os.Areas.Identity.Pages.Account
             _signInManager = signInManager;
             _logger = logger;
             _emailSender = emailSender;
+            _dbConnectionService = dbConnectionService;
         }
 
         [BindProperty]
@@ -60,7 +65,7 @@ namespace os.Areas.Identity.Pages.Account
 
             [Required]
             [EmailAddress]
-            [Display(Name = "Email")]
+            [Display(Name = "Email:")]
             public string Email { get; set; }
 
             [Required]
@@ -142,6 +147,10 @@ namespace os.Areas.Identity.Pages.Account
                 if (result.Succeeded)
                 {
                     _logger.LogInformation("User created a new account with password.");
+
+                    //pass the user model to the db access save details function with will append the users role to the junction table
+                    AppUser newUserReturnedModel = _dbConnectionService.GetUserDetailsByEmail(user.Email);
+                    _dbConnectionService.UpdateUserDetailsAsync(newUserReturnedModel);
 
                     var userId = await _userManager.GetUserIdAsync(user);
                     var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);

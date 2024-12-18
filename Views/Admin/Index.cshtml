@@ -1,0 +1,49 @@
+﻿@using Microsoft.AspNetCore.Identity
+@using os.Areas.Identity.Data
+@using os.Services
+@using os.Models
+@inject UserManager<AppUser> UserManager
+@inject DbConnectionService DbConnectionService
+
+@{
+    string? userid = User?.Identity?.IsAuthenticated == true ? UserManager.GetUserId(User) : null;
+    string? role = "";
+    if (userid != null)
+    {
+        AppUser user = DbConnectionService.GetUserDetailsById(userid);
+        role = user.UserRole;
+    }
+}
+
+<h1 class="text-center margin-top-120">Administration Home</h1>
+<p class="text-center">Welcome @(User?.Identity?.IsAuthenticated == true ? UserManager.GetUserName(User) : "").</p>
+<p class="text-center">Your current role is: @role</p>
+
+<div class="outer-container">
+    <div class="container-row">
+        <div class="btn-container">
+            <div class="btn-row">
+                <a class="nav-link text-dark" asp-controller="Admin" asp-action="ManageAccounts" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="Redirect to manage users page"><img class="btn-img" width="150" src="~/img/manage_users.jpg" /></a>
+            </div>
+            <div class="btn-row">
+                <span class="btn-label">Manage Users</span>
+            </div>
+        </div>
+        @* <div class="btn-container">
+             <div class="btn-row">
+                 <a class="nav-link text-dark" asp-controller="Admin" asp-action="ManageRoles" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="Redirects to user roles page"><img class="btn-img" width="150" src="~/img/user_roles.jpg" /></a>
+             </div>
+             <div class="btn-row">
+                 <span class="btn-label">Manage Roles</span>
+             </div>
+         </div> *@
+        <div class="btn-container">
+            <div class="btn-row">
+                <a class="nav-link text-dark" asp-controller="Admin" asp-action="ViewLogs" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="View all event logs of the system"><img class="btn-img" width="150" src="~/img/security_logs.jpg" /></a>
+            </div>
+            <div class="btn-row">
+                <span class="btn-label">View Logs</span>
+            </div>
+        </div>
+    </div>
+</div>

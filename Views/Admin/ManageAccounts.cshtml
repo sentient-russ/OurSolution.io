@@ -1,0 +1,89 @@
+﻿@model IEnumerable<os.Areas.Identity.Data.AppUser>
+
+<div class="text-center margin-top-120">
+    <img src="~/img/manage_users.jpg" style="max-height: 150px;" />
+</div>
+<h1 class="text-center mb-4">Manage User Accounts</h1>
+<div class="search-row">
+    <div class="search-colum-1">
+        <a class="btn btn-primary cust-btn" id="register" asp-area="Identity" asp-page="/Account/AdminRegister" role="button" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="Add a new user to the system.">Add New</a>
+    </div>
+    <div class="search-colum-3">
+        <input type="text" id="searchInput" class="form-control" style="max-width:200px;" placeholder="Search...">
+        <img src="~/img/search.svg" class="search-img" />
+    </div>
+</div>
+<div class="table-wrapper">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>
+                    @Html.DisplayNameFor(model => model.FirstName)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.LastName)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.Email)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.PhoneNumber)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.UserRole)
+                </th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody id="tableBody">
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.FirstName)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.LastName)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.Email)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.PhoneNumber)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.UserRole)
+                    </td>
+                    <td>
+                        <a class="btn btn-outline-secondary" asp-action="EditAccountDetails" asp-route-id="@item.Id" role="button" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="Edit the users details.">Details</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+@* Search and Filter *@
+<script>
+    document.getElementById('searchInput').addEventListener('keyup', function () {
+        let input = this.value.toLowerCase();
+        let rows = document.getElementById('tableBody').getElementsByTagName('tr');
+
+        for (let i = 0; i < rows.length; i++) {
+            let rowData = rows[i].getElementsByTagName('td');
+            let match = false;
+
+            for (let j = 0; j < rowData.length; j++) {
+                if (rowData[j].innerText.toLowerCase().indexOf(input) > -1) {
+                    match = true;
+                    break;
+                }
+            }
+
+            if (match) {
+                rows[i].style.display = '';
+            } else {
+                rows[i].style.display = 'none';
+            }
+        }
+    });
+</script>

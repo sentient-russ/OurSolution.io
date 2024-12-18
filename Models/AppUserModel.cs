@@ -1,25 +1,21 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
+﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.AspNetCore.Http;
-//using static System.Runtime.InteropServices.JavaScript.JSType;
+using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel;
 
-namespace os.Areas.Identity.Data
+namespace os.Models
 {
     [ApiController]
     [Route("[Controller]")]
     [BindProperties(SupportsGet = true)]
-    public class AppUser : IdentityUser
+    public class AppUserModel
     {
         static DateTime today = System.DateTime.Now;
+
+        [Key]
+        public int? Id { get; set; }
 
         [Required]
         [DataType(DataType.Text)]
@@ -33,24 +29,26 @@ namespace os.Areas.Identity.Data
         [DisplayName("Last Name:")]
         public string? LastName { get; set; } = "";
 
-        [DataType(DataType.EmailAddress)]
-        [DisplayName("Email:")]
-        public string? Email { get; set; } = "";
-
         [DataType(DataType.Text)]
         [StringLength(100, MinimumLength = 1)]
         [DisplayName("Phone Number:")]
         public string? PhoneNumber { get; set; } = "";
 
-        [DisplayFormat(DataFormatString = "{0:yyyy-MM-dd}", ApplyFormatInEditMode = true)]
+        [Required]
+        [DataType(DataType.Text)]
+        [StringLength(100, MinimumLength = 1)]
+        [DisplayName("Email:")]
+        public string? Email { get; set; } = "";
+
+        [DisplayFormat(DataFormatString = "{:dd MMM yyyy}", ApplyFormatInEditMode = true)]
         [DataType(DataType.Date)]
         [DisplayName("Belly Button Birthday:")]
-        public DateTime? BellyButtonBirthday { get; set; }
+        public DateTime? BellyButtonBirthday { get; set; } = today;
 
-        [DisplayFormat(DataFormatString = "{0:yyyy-MM-dd}", ApplyFormatInEditMode = true)]
+        [DisplayFormat(DataFormatString = "{:dd MMM yyyy}", ApplyFormatInEditMode = true)]
         [DataType(DataType.Date)]
         [DisplayName("AA Birthday:")]
-        public DateTime? AABirthday { get; set; }
+        public DateTime? AABirthday { get; set; } = today;
 
         [DataType(DataType.Text)]
         [StringLength(100, MinimumLength = 1)]
@@ -90,7 +88,5 @@ namespace os.Areas.Identity.Data
 
         [NotMapped]
         public IEnumerable<SelectListItem>? RoleList { get; set; }
-
     }
-
 }

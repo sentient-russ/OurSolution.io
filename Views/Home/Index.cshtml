@@ -1,8 +1,31 @@
-﻿@{
-    ViewData["Title"] = "OurSolution";
+﻿@* Index.cshtml *@
+@page
+@if (ViewBag.StatusMessage != null)
+{
+    <div class="alert alert-info">
+        @ViewBag.StatusMessage
+    </div>
 }
 
-<div class="text-center">
-    <h1 class="display-4">OurSolution.io</h1>
-    <p>Learn about <a href="https://outsolution.io/about">OurSolution.io</a>.</p>
+<audio id="audioPlayer" controls hidden></audio>
+<center><h1>Externally Authorized Speakers</h1></center>
+<div class="container-row">
+    <div class="player-container">
+        <div class="satus-window">
+            <div class="status-message-row"><span class="status-message" id="status-message">Stopped</span>...</div>
+            <div class="speaker-name-row"><span class="spaker-name" id="speaker-name"></span></div>
+        </div>
+        <div class="player-controls">
+            <button id="previous" class="btn btn-primary">Previous</button>
+            <button id="play" class="btn btn-primary">Play</button>
+            <button id="pause" class="btn btn-primary">Pause</button>
+            <button id="stop" class="btn btn-primary">Stop</button>
+            <button id="next" class="btn btn-primary">Next</button>           
+        </div>
+        <div class="speaker-container">
+            <div id="fileList">
+                <!-- File list will be populated here -->
+            </div>
+        </div>
+    </div>
 </div>

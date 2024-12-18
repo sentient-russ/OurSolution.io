@@ -13,7 +13,7 @@ public class ApplicationDbContext : IdentityDbContext<AppUser>
     {
 
     }
-
+    public virtual DbSet<os.Models.SpeakerModel> Speakers { get; set; } = default!;
     //the next section overrides the default db naming
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -27,13 +27,14 @@ public class ApplicationDbContext : IdentityDbContext<AppUser>
         builder.Entity<IdentityRoleClaim<string>>(entity => { entity.ToTable(name: "RoleClaims"); });
         builder.Entity<IdentityUserToken<string>>(entity => { entity.ToTable(name: "UserTokens"); });
     }
+    public DbSet<os.Models.AppUserModel> AppUserModel { get; set; } = default!;
+    public DbSet<os.Models.LogModel> SecurityLog { get; set; } = default!;
 }
 
 internal class ApplicationUserEntityConfiguration : IEntityTypeConfiguration<AppUser>
 {
     public void Configure(EntityTypeBuilder<AppUser> builder)
     {
-
         builder.Property(u => u.FirstName).HasMaxLength(256);
         builder.Property(u => u.LastName).HasMaxLength(256);
         builder.Property(u => u.Address).HasMaxLength(256);
@@ -45,7 +46,6 @@ internal class ApplicationUserEntityConfiguration : IEntityTypeConfiguration<App
         builder.Property(u => u.PhoneNumber).HasMaxLength(256);
         builder.Property(u => u.UserRole).HasMaxLength(256);
         builder.Property(u => u.ActiveStatus);
-
     }
 }
 

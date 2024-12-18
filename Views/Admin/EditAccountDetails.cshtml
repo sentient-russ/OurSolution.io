@@ -1,0 +1,87 @@
+﻿@model os.Areas.Identity.Data.AppUser
+
+<center><h1>Edit Member</h1></center>
+
+<hr />
+<div class="edit-container-row">
+    <div class="edit-container-column">
+
+        <form asp-action="UpdateAccountDetails">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input type="hidden" asp-for="Id" />
+            <div class="form-group">
+                <label asp-for="FirstName" class="control-label cust-label"></label>
+                <input asp-for="FirstName" class="form-control" />
+                <span asp-validation-for="FirstName" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="LastName" class="control-label cust-label"></label>
+                <input asp-for="LastName" class="form-control" />
+                <span asp-validation-for="LastName" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="PhoneNumber" class="control-label cust-label"></label>
+                <input asp-for="PhoneNumber" class="form-control" id="Phone"/>
+                <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="BellyButtonBirthday" class="control-label cust-label"></label>
+                <input asp-for="BellyButtonBirthday" class="form-control" type="date" />
+                <span asp-validation-for="BellyButtonBirthday" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="AABirthday" class="control-label cust-label"></label>
+                <input asp-for="AABirthday" class="form-control" type="date" />
+                <span asp-validation-for="AABirthday" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Address" class="control-label cust-label"></label>
+                <input asp-for="Address" class="form-control" />
+                <span asp-validation-for="Address" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="City" class="control-label cust-label"></label>
+                <input asp-for="City" class="form-control" />
+                <span asp-validation-for="City" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="State" class="control-label cust-label"></label>
+                <input asp-for="State" class="form-control" />
+                <span asp-validation-for="State" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Zip" class="control-label cust-label"></label>
+                <input asp-for="Zip" class="form-control" />
+                <span asp-validation-for="Zip" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="UserRole" class="control-label cust-label"></label>
+                <select asp-for="UserRole" asp-items=@Model.RoleList class="form-drop-down form-select" aria-required="true">
+                    <option default hidden disabled selected>Select Role</option>
+                </select>
+                <span asp-validation-for="UserRole" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="ActiveStatus" class="control-label cust-label"></label>
+                <select asp-for="ActiveStatus" class="form-drop-down form-select" aria-required="true">
+                    <option default id="Active">Active</option>
+                    <option default id="Disabled">Disabled</option>
+                </select>
+                <span asp-validation-for="ActiveStatus" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="ProfileImage" class="control-label cust-label" hidden></label>
+                <input asp-for="ProfileImage" type="file" class="form-control" hidden/>
+                <span asp-validation-for="ProfileImage" class="text-danger"></span>
+            </div>
+            <div class="form-group">                
+                <a href="@Url.Action("ManageAccounts", "Admin")" class="btn btn-secondary edit-btn">Back</a>
+                <input type="submit" value="Save" class="btn btn-primary edit-btn" />
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

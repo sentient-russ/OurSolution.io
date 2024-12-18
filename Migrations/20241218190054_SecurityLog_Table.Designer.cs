@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using os.Areas.Identity.Data;
 
@@ -11,9 +12,11 @@ using os.Areas.Identity.Data;
 namespace os.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20241218190054_SecurityLog_Table")]
+    partial class SecurityLog_Table
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -352,7 +355,7 @@ namespace os.Migrations
                     b.Property<string>("ChangedTo")
                         .HasColumnType("longtext");
 
-                    b.Property<string>("Description")
+                    b.Property<string>("Discription")
                         .HasColumnType("longtext");
 
                     b.Property<DateTime?>("EventDate")

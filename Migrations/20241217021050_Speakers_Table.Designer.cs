@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using os.Areas.Identity.Data;
 
@@ -11,9 +12,11 @@ using os.Areas.Identity.Data;
 namespace os.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20241217021050_Speakers_Table")]
+    partial class Speakers_Table
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -170,21 +173,17 @@ namespace os.Migrations
                     b.Property<int>("AccessFailedCount")
                         .HasColumnType("int");
 
-                    b.Property<string>("ActiveStatus")
-                        .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("varchar(10)");
+                    b.Property<bool?>("ActiveStatus")
+                        .HasColumnType("tinyint(1)");
 
                     b.Property<string>("Address")
-                        .HasMaxLength(100)
-                        .HasColumnType("varchar(100)");
+                        .HasColumnType("longtext");
 
                     b.Property<DateTime?>("BellyButtonBirthday")
                         .HasColumnType("datetime(6)");
 
                     b.Property<string>("City")
-                        .HasMaxLength(100)
-                        .HasColumnType("varchar(100)");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
@@ -198,14 +197,10 @@ namespace os.Migrations
                         .HasColumnType("tinyint(1)");
 
                     b.Property<string>("FirstName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("varchar(100)");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("LastName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("varchar(100)");
+                        .HasColumnType("longtext");
 
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("tinyint(1)");
@@ -225,8 +220,7 @@ namespace os.Migrations
                         .HasColumnType("longtext");
 
                     b.Property<string>("PhoneNumber")
-                        .HasMaxLength(100)
-                        .HasColumnType("varchar(100)");
+                        .HasColumnType("longtext");
 
                     b.Property<bool>("PhoneNumberConfirmed")
                         .HasColumnType("tinyint(1)");
@@ -239,8 +233,7 @@ namespace os.Migrations
                         .HasColumnType("longtext");
 
                     b.Property<string>("State")
-                        .HasMaxLength(2)
-                        .HasColumnType("varchar(2)");
+                        .HasColumnType("longtext");
 
                     b.Property<bool>("TwoFactorEnabled")
                         .HasColumnType("tinyint(1)");
@@ -250,13 +243,10 @@ namespace os.Migrations
                         .HasColumnType("varchar(256)");
 
                     b.Property<string>("UserRole")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("varchar(100)");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("Zip")
-                        .HasMaxLength(10)
-                        .HasColumnType("varchar(10)");
+                        .HasColumnType("longtext");
 
                     b.HasKey("Id");
 
@@ -270,109 +260,10 @@ namespace os.Migrations
                     b.ToTable("Users", "Identity");
                 });
 
-            modelBuilder.Entity("os.Models.AppUserModel", b =>
-                {
-                    b.Property<int?>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int?>("Id"));
-
-                    b.Property<DateTime?>("AABirthday")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<string>("ActiveStatus")
-                        .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("varchar(10)");
-
-                    b.Property<string>("Address")
-                        .HasMaxLength(100)
-                        .HasColumnType("varchar(100)");
-
-                    b.Property<DateTime?>("BellyButtonBirthday")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<string>("City")
-                        .HasMaxLength(100)
-                        .HasColumnType("varchar(100)");
-
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("varchar(100)");
-
-                    b.Property<string>("FirstName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("varchar(100)");
-
-                    b.Property<string>("LastName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("varchar(100)");
-
-                    b.Property<string>("PhoneNumber")
-                        .HasMaxLength(100)
-                        .HasColumnType("varchar(100)");
-
-                    b.Property<string>("ProfileImage")
-                        .HasMaxLength(500)
-                        .HasColumnType("varchar(500)");
-
-                    b.Property<string>("State")
-                        .HasMaxLength(2)
-                        .HasColumnType("varchar(2)");
-
-                    b.Property<string>("UserRole")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("varchar(100)");
-
-                    b.Property<string>("Zip")
-                        .HasMaxLength(10)
-                        .HasColumnType("varchar(10)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("AppUserModel", "Identity");
-                });
-
-            modelBuilder.Entity("os.Models.LogModel", b =>
-                {
-                    b.Property<int?>("EventId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int?>("EventId"));
-
-                    b.Property<string>("ChangedFrom")
-                        .HasColumnType("longtext");
-
-                    b.Property<string>("ChangedTo")
-                        .HasColumnType("longtext");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("longtext");
-
-                    b.Property<DateTime?>("EventDate")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<string>("UserId")
-                        .HasColumnType("longtext");
-
-                    b.HasKey("EventId");
-
-                    b.ToTable("SecurityLog", "Identity");
-                });
-
             modelBuilder.Entity("os.Models.SpeakerModel", b =>
                 {
-                    b.Property<int?>("SpeakerId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int?>("SpeakerId"));
+                    b.Property<string>("SpeakerId")
+                        .HasColumnType("varchar(255)");
 
                     b.Property<DateTime>("DateRecorded")
                         .HasColumnType("datetime(6)");
@@ -391,9 +282,6 @@ namespace os.Migrations
 
                     b.Property<int?>("NumUpVotes")
                         .HasColumnType("int");
-
-                    b.Property<string>("SpeakerStatus")
-                        .HasColumnType("longtext");
 
                     b.Property<DateTime>("UploadDate")
                         .HasColumnType("datetime(6)");

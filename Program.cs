@@ -1,7 +1,9 @@
+/*Program.cs*/
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using os.Areas.Identity.Data;
 using os.Areas.Identity.Services;
+using os.Services;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption.ConfigurationModel;
 using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption;
@@ -11,6 +13,7 @@ using System.Security.Authentication;
 using Microsoft.AspNetCore.Server.Kestrel.Https;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.AspNetCore.Identity.UI.Services;
+using Microsoft.AspNetCore.Authentication.Cookies;
 //using WebPWrecover.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -90,6 +93,7 @@ builder.Services.Configure<IdentityOptions>(options =>
     options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
     options.Lockout.MaxFailedAccessAttempts = 3;
     options.Lockout.AllowedForNewUsers = true;
+    options.SignIn.RequireConfirmedAccount = true;
 });
 builder.Services.AddAuthorization();
 
@@ -101,8 +105,7 @@ builder.Services.AddDataProtection().UseCryptographicAlgorithms(
         ValidationAlgorithm = ValidationAlgorithm.HMACSHA256
     });
 
-//builder.Services.AddScoped<UserService>(); // This is a non-singleton class providing the current users information via dependency injection.
-//builder.Services.AddSingleton<DbConnectorService>(); // Cannot be a singleton because it will miss the conn str
+builder.Services.AddSingleton<DbConnectionService>(); // Cannot be a singleton because it will miss the conn str
 builder.Services.AddTransient<IEmailSender, EmailService>();
 builder.Services.AddAuthorization();
 builder.Services.AddHttpClient();
@@ -118,6 +121,30 @@ builder.Services.AddResponseCompression(options =>
 );
 builder.Services.AddMvc();
 
+/*builder.Services.AddSignalR(options =>
+{
+    options.KeepAliveInterval = TimeSpan.FromSeconds(30);
+    options.ClientTimeoutInterval = TimeSpan.FromMinutes(2);
+});
+*/
+
+
+/*builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.Cookie.Name = "YourAppCookieName"; // Set a custom cookie name
+        options.Cookie.HttpOnly = true; // Prevent client-side JavaScript from accessing the cookie
+        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest; // Use secure cookies in production
+        options.Cookie.SameSite = SameSiteMode.Lax; // Protect against CSRF attacks
+        options.ExpireTimeSpan = TimeSpan.FromMinutes(30); // Set cookie expiration time
+        options.SlidingExpiration = true; // Renew the cookie expiration time on each request
+        options.LoginPath = "/Account/Login"; // Redirect to this path if the user is not authenticated
+        options.LogoutPath = "/Account/Logout"; // Redirect to this path after logout
+        options.AccessDeniedPath = "/Account/AccessDenied"; // Redirect to this path if access is denied
+    });
+*/
+
+
 var app = builder.Build();
 
 if (!app.Environment.IsDevelopment())
@@ -129,7 +156,7 @@ if (!app.Environment.IsDevelopment())
 }
 else
 {
-    app.UseDeveloperExceptionPage(); // This can be enabled to enable http error reporting. Disable for production!
+    // app.UseDeveloperExceptionPage(); // This can be enabled to enable http error reporting. Disable for production!
     // app.UseHttpsRedirection(); // <-- Do not use! This is retained as a reminder. Appache2 is responsible for https.
     // app.UseHsts(); <-- Do not use! This is retained as a reminder.
 }
@@ -138,12 +165,21 @@ else
 app.UseCookiePolicy();
 app.UseStaticFiles();
 app.UseRouting();
+
+app.MapControllers();
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
+
+app.MapControllerRoute(
+    name: "Admin",
+    pattern: "{controller=AdminController}/{action=Index}/{id?}");
+app.MapControllerRoute(
+    name: "Member",
+    pattern: "{controller=MemberController}/{action=Index}/{id?}");
 
 app.MapRazorPages();
 app.Run();

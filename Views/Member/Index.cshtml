@@ -1,0 +1,31 @@
+﻿@using Microsoft.AspNetCore.Identity
+@using os.Areas.Identity.Data
+@using os.Services
+@using os.Models
+@inject UserManager<AppUser> UserManager
+@inject DbConnectionService DbConnectionService
+
+@{
+    string? userid = User?.Identity?.IsAuthenticated == true ? UserManager.GetUserId(User) : null;
+    string? role = "";
+    if (userid != null)
+    {
+        AppUser user = DbConnectionService.GetUserDetailsById(userid);
+        role = user.UserRole;
+    }
+}
+<center><h1>Member Home</h1></center>
+<center>More to come...</center>
+<center>? Phone List</center>
+<center>? Update Member Profile</center>
+<center>? Update Member Password</center>
+<center>? Update Member Email</center>
+<center>? Update Member Address</center>
+<center>? Update Member Phone</center>
+<center>? Update Member Emergency Contact</center>
+<center>? Update Member Emergency Phone</center>
+<center>? Update Member Emergency Email</center>
+<center>? Update Member AA Birthday</center>
+<center>? Update Member Contact Preferrences</center>
+<center>? Update Member Share Details? (Default False)</center>
+<center>? Update Member Audio Agreement</center>
