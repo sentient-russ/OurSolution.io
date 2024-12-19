@@ -1,0 +1,88 @@
+﻿@using os.Models
+@model IEnumerable<os.Models.SpeakerModel>
+<div class="text-center">
+    <img src="~/img/speakers.svg" style="min-height: 150px;" />
+</div>
+<h1 class="text-center mb-4">Manage Speakers</h1>
+<div class="search-row">
+    <div class="search-colum-1">
+        <a href="@Url.Action("AddSpeaker", "Admin")" class="btn btn-secondary cust-btn" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="Add a new speaker to the system.">Add Speaker</a>
+    </div>
+    <div class="search-colum-3">
+        <input type="text" id="searchInput" class="form-control" style="max-width:200px;" placeholder="Search...">
+        <img src="~/img/search.svg" class="search-img" />
+    </div>
+</div>
+<div class="table-wrapper">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>
+                    @Html.DisplayNameFor(model => model.FileName)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.LastName)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.Description)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.UploadDate)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.UploadedBy)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.SpeakerStatus)
+                </th>
+            </tr>
+        </thead>
+        <tbody id="tableBody">
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td style="text-align:left; padding-left:20px;">
+                        @Html.DisplayFor(modelItem => item.FileName)
+                    </td>
+                    <td style="text-align:left;">
+                        @Html.DisplayFor(modelItem => item.LastName)
+                    </td>
+                    <td style="text-align:left;">
+                        @Html.DisplayFor(modelItem => item.Description)
+                    </td>
+                    <td style="text-align:left;">
+                        @Html.DisplayFor(modelItem => item.UploadDate)
+                    </td>
+                    <td style="text-align:left;">
+                        @Html.DisplayFor(modelItem => item.UploadedBy)
+                    </td>
+                    <td style="text-align:left;">
+                        @Html.DisplayFor(modelItem => item.SpeakerStatus)
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+@* Search and Filter *@
+<script>
+    document.getElementById('searchInput').addEventListener('keyup', function () {
+        let input = this.value.toLowerCase();
+        let rows = document.getElementById('tableBody').getElementsByTagName('tr');
+        for (let i = 0; i < rows.length; i++) {
+            let rowData = rows[i].getElementsByTagName('td');
+            let match = false;
+            for (let j = 0; j < rowData.length; j++) {
+                if (rowData[j].innerText.toLowerCase().indexOf(input) > -1) {
+                    match = true;
+                    break;
+                }
+            }
+            if (match) {
+                rows[i].style.display = '';
+            } else {
+                rows[i].style.display = 'none';
+            }
+        }
+    });
+</script>

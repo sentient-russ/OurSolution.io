@@ -93,69 +93,69 @@ namespace os.Controllers
         }
         [HttpPost]
         [Authorize(Roles = "Administrator")]
-        public async Task<IActionResult> UploadSpeaker([Bind("SpeakerId, FileName, FirstName, LastName, Description, NumUpVotes, DateRecorded, UploadDate, UploadedBy, FormFile")] SpeakerModel newSpeakerIn)
+        public async Task<IActionResult> UploadSpeaker([Bind("SpeakerId, FileName, FirstName, LastName, Description, NumUpVotes, DateRecorded, UploadDate, UploadedBy, SpeakerStatus, FormFile")] SpeakerModel newSpeakerIn)
         {
-            if (newSpeakerIn.FormFile != null && newSpeakerIn.FormFile.Length > 0)
+            if (newSpeakerIn.FormFile == null || newSpeakerIn.FormFile.Length == 0)
             {
-                // Check file length
-                const long max_size = 50 * 1024 * 1024;
-                if (newSpeakerIn.FormFile.Length > max_size)
-                {
-                    ViewBag.StatusMessage = "The file size must be less than 50MB.";
-                    return View("UploadSpeaker");
-                }
+                ViewBag.StatusMessage = "No file selected.";
+                return View("UploadSpeaker");
+            }
 
-                // Check file type extension
-                var fileExtension = Path.GetExtension(newSpeakerIn.FormFile.FileName).ToLowerInvariant();
-                if (fileExtension != ".mp3")
-                {
-                    ViewBag.StatusMessage = "The file type must be a .mp3 type.";
-                    return View("UploadSpeaker");
-                }
+            const long max_size = 50 * 1024 * 1024;
+            if (newSpeakerIn.FormFile.Length > max_size)
+            {
+                ViewBag.StatusMessage = "The file size must be less than 50MB.";
+                return View("UploadSpeaker");
+            }
 
-                // Create a new file name for security purposes
-                DateTimeOffset current_time = DateTimeOffset.UtcNow;
-                long ms_time = current_time.ToUnixTimeMilliseconds();
-                string new_file_name = ms_time.ToString() + ".mp3";
+            var fileExtension = Path.GetExtension(newSpeakerIn.FormFile.FileName).ToLowerInvariant();
+            if (fileExtension != ".mp3")
+            {
+                ViewBag.StatusMessage = "The file type must be a .mp3 type.";
+                return View("UploadSpeaker");
+            }
 
-                // Save the data stream to a file
-                var filePath = Path.Combine("wwwroot", "uploads", new_file_name);
+            DateTimeOffset current_time = DateTimeOffset.UtcNow;
+            long ms_time = current_time.ToUnixTimeMilliseconds();
+            string new_file_name = ms_time.ToString() + ".mp3";
+
+            var filePath = Path.Combine("wwwroot", "uploads", new_file_name);
+            try
+            {
                 using (var stream = new FileStream(filePath, FileMode.Create))
                 {
                     await newSpeakerIn.FormFile.CopyToAsync(stream);
                 }
+            }
+            catch (Exception ex)
+            {
+                ViewBag.StatusMessage = "Error uploading file: " + ex.Message;
+                return View("UploadSpeaker");
+            }
 
-                // Save the new file name to the user's DB record
-                var user = await _userManager.GetUserAsync(User);
-                if (user != null)
+            var user = await _userManager.GetUserAsync(User);
+            if (user != null)
+            {
+                newSpeakerIn.FileName = new_file_name;
+                newSpeakerIn.UploadedBy = user.Id;
+
+                var succeeded = _dbConnectionService.AddSpeaker(newSpeakerIn);
+                if (succeeded)
                 {
-                    // swap the file name in the newSpeakerIn object with the new file name
-                    newSpeakerIn.FileName = new_file_name;
-                    // update the user's ID in the newSpeakerIn object
-                    newSpeakerIn.UploadedBy = user.Id;
-                    // save the newSpeakerIn object to the database
-                    var addSpeakerResult = _dbConnectionService.AddSpeaker(newSpeakerIn);
-                    var succeeded = _dbConnectionService.AddSpeaker(newSpeakerIn);
-
-                    if (succeeded)
-                    {
-                        ViewBag.StatusMessage = "File uploaded successfully.";
-                    }
-                    else
-                    {
-                        ViewBag.StatusMessage = "Error uploading. Try again or contact development.";
-                    }
+                    ViewBag.StatusMessage = "File uploaded successfully.";
+                    return RedirectToAction("Index");
                 }
                 else
                 {
-                    ViewBag.StatusMessage = "User not found.";
+                    ViewBag.StatusMessage = "Error uploading. Try again or contact development.";
+                    return View("UploadSpeaker");
                 }
             }
             else
             {
-                ViewBag.StatusMessage = "No file selected.";
+                ViewBag.StatusMessage = "User not found.";
+                return View("UploadSpeaker");
             }
-            return View("Index");
         }
         [Authorize(Roles = "Administrator")]
         [HttpGet]
@@ -165,6 +165,27 @@ namespace os.Controllers
             logs = _dbConnectionService.GetLogs();
             logs.Reverse();
             return View(logs);
+        }
+
+        [Authorize(Roles = "Administrator")]
+        [HttpGet]
+        public async Task<IActionResult> ViewSpeakers()
+        {
+            List<SpeakerModel> speakersList = new List<SpeakerModel>();
+            speakersList = _dbConnectionService.GetSpeakersList();
+            speakersList.Reverse();
+            return View(speakersList);
+        }
+
+        [Authorize(Roles = "Administrator")]
+        [HttpGet]
+        public async Task<IActionResult> AddSpeaker()
+        {
+            SpeakerModel speaker = new SpeakerModel();
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            AppUser userDetails = _dbConnectionService.GetUserDetailsById(userId);
+            speaker.UploadedBy = userDetails.Email;
+            return View(speaker);
         }
     }
 }
