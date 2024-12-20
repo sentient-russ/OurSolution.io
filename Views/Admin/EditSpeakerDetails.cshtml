@@ -1,6 +1,7 @@
 ﻿@model os.Models.SpeakerModel
 @{
     ViewData["Title"] = "Edit Speaker";
+    string? statusMessage = ViewBag.StatusMessage;
 }
 <div class="edit-container-row">
     <div class="edit-container-column">
@@ -10,6 +11,12 @@
         <div>
             <center><h1>Edit Speaker</h1></center>
         </div>
+        @if (!string.IsNullOrEmpty(statusMessage))
+        {
+            <div class="alert alert-info">
+                @statusMessage
+            </div>
+        }
         <form asp-action="UpdateSpeaker" method="post">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
             <input type="hidden" asp-for="SpeakerId" />

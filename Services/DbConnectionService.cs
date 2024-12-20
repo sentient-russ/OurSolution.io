@@ -69,7 +69,7 @@ namespace os.Services
 
         }
         /*
-         * Updates a speaker's details
+         * Updates allowed fields for a specific speaker
          */
         public bool UpdateSpeakerDetails(SpeakerModel speakerIn)
         {
@@ -120,7 +120,6 @@ namespace os.Services
             {
                 Console.WriteLine(ex.ToString());
             }
-
             return Succeeded;
         }
         /*
@@ -134,7 +133,6 @@ namespace os.Services
             string beforeUpdate = "No previous record";
             string afterUpdate = SpeakerDetailsString(speakerIn);
             CreateLog(email, "AddSpeaker() called.", beforeUpdate, afterUpdate);
-
             bool Succeeded = false;
             
             try

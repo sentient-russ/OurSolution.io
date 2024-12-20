@@ -1,6 +1,7 @@
 ﻿@model os.Models.SpeakerModel
 @{
     ViewData["Title"] = "Add Speaker";
+    string? statusMessage = ViewBag.StatusMessage;
 }
 <div class="edit-container-row">
     <div class="edit-container-column">
@@ -10,13 +11,14 @@
         <div>
             <center><h1>Add Speaker</h1></center>
         </div>
-        <form asp-action="UploadSpeaker" enctype="multipart/form-data">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <div class="form-group">
-                <label asp-for="FileName" class="control-label cust-label" hidden></label>
-                <input asp-for="FileName" class="form-control" hidden />
-                <span asp-validation-for="FileName" class="text-danger" hidden></span>
+        @if (!string.IsNullOrEmpty(statusMessage))
+        {
+            <div class="alert alert-info">
+                @statusMessage
             </div>
+        }
+        <form asp-action="UploadSpeaker" enctype="multipart/form-data" method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
             <div class="form-group">
                 <label asp-for="FirstName" class="control-label cust-label"></label>
                 <input asp-for="FirstName" class="form-control" />
@@ -33,11 +35,6 @@
                 <span asp-validation-for="Description" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <label asp-for="NumUpVotes" class="control-label cust-label" hidden></label>
-                <input asp-for="NumUpVotes" class="form-control" hidden />
-                <span asp-validation-for="NumUpVotes" class="text-danger" hidden></span>
-            </div>
-            <div class="form-group">
                 <label asp-for="DateRecorded" class="control-label cust-label"></label>
                 <input asp-for="DateRecorded" class="form-control" />
                 <span asp-validation-for="DateRecorded" class="text-danger"></span>
@@ -46,11 +43,6 @@
                 <label asp-for="UploadDate" class="control-label cust-label"></label>
                 <input asp-for="UploadDate" class="form-control" />
                 <span asp-validation-for="UploadDate" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="UploadedBy" class="control-label cust-label" hidden></label>
-                <input asp-for="UploadedBy" class="form-control" hidden/>
-                <span asp-validation-for="UploadedBy" class="text-danger" hidden></span>
             </div>
             <div class="form-group">
                 <label asp-for="SpeakerStatus" class="control-label cust-label"></label>

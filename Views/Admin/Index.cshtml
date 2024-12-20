@@ -14,8 +14,7 @@
         role = user.UserRole;
     }
 }
-
-<h1 class="text-center margin-top-120">Administration Home</h1>
+<h1 class="text-center">Administration Home</h1>
 <p class="text-center">Welcome @(User?.Identity?.IsAuthenticated == true ? UserManager.GetUserName(User) : "").</p>
 <p class="text-center">Your current role is: @role</p>
 

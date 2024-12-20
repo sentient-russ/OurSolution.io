@@ -2,12 +2,6 @@ html {
   font-size: 14px;
 }
 
-@media (min-width: 768px) {
-  html {
-    font-size: 16px;
-  }
-}
-
 .btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
   box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
 }
@@ -27,7 +21,7 @@ footer {
     width: 100%;
     background: white;
     border: 1px solid;
-    line-height: 30px;
+    line-height: 18px !important;
 }
 .login-container-row {
     display: flex;
@@ -172,8 +166,8 @@ footer {
 
 .text-danger {
     color: #d54141 !important;
-    font-weight: 700 !important;
-    font-size: 1.2rem;
+    font-weight: 510 !important;
+    font-size: 1.1rem;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 }
@@ -291,19 +285,22 @@ input:-webkit-autofill:focus {
     width: 375px;
     margin-left: auto;
     margin-right: auto;
-    border: 0.5px solid #0d1725;
+    border: 2.4px solid #0d172555;
     border-radius: 10px;
     box-shadow: 10px 10px 10px #333;
+    background-image: radial-gradient(whitesmoke, #475569);
 }
-.satus-window {
+.status-window {
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
+    text-align:left;
     padding: 10px;
     border: 0.5px solid #0d1725;
     border-radius: 10px;
     margin-left: 10px;
     margin-right: 10px;
-    min-height: 75px;
+    min-height: 75px; /* Minimum height */
+    background-color: #f9f9f9; /* Optional: Add a background color */
 }
 .player-controls{
     display: flex;
@@ -316,13 +313,167 @@ input:-webkit-autofill:focus {
     padding-left:10px;
     padding-right:10px;
 }
+
+/* Style for the scrollable container */
 .speaker-container {
+    max-height: 350px; /* Set the maximum height for scrolling */
+    overflow-y: auto; /* Enable vertical scrolling */
+    border: 1px solid #ccc; /* Optional: Add a border for better visibility */
+    background-color: #f9f9f9; /* Optional: Add a background color */
+    border-radius: 10px 10px 10px 10px;
+}
+
+.status-message-row{
+    
+}
+
+/* Style for the search input box */
+.search-container {
     display: flex;
-    flex-direction: row;
+    padding: 7.5px;
+    outline: none;
+    font-size: 16px;
+    transition: border-color 0.3s;
+}
+
+.search-input {
+    display: flex;
     padding: 10px;
-    border: 0.5px solid #0d1725;
-    border-radius: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    outline: none;
+    font-size: 16px;
+    transition: border-color 0.3s ease;
+    min-width: 100%;
+}
+
+    .search-input:focus {
+        border-color: #007bff; /* Highlight the border when focused */
+    }
+
+.player-headings{
+    display:flex;
+    flex-direction:row;
+    font-weight: 505;
+}
+.player-id-column {
+    display: flex;
+    flex-direction: column;
+    min-width: 50px;
+    text-align:center;
     margin-left: 10px;
+}
+.player-speaker-column {
+    display: flex;
+    flex-direction: column;
+    width: 220px;
+    text-align: left;
+    padding-left: 25px;
+}
+.player-uploaded-column {
+    display: flex;
+    flex-direction: column;
+    width: 80px;
+}
+.file-list-container {
+    border-radius: 10px 10px 10px 10px;
+}
+
+.speaker-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+    cursor: pointer; /* Change cursor to pointer on hover */
+    transition: background-color 0.3s ease; /* Smooth transition for hover effect */
+}
+
+    .speaker-row:hover {
+        background-color: #f0f0f0; /* Light gray background on hover */
+    }
+
+.speaker-id-column {
+    flex: 1;
+    max-width: 50px;
+    text-align: center;
+}
+
+.speaker-name-column {
+    flex: 1;
+    text-align: left;
+    width: 250px;
+    padding-left: 25px;
+}
+.speaker-talkdate-column {
+    display: flex;
+    flex: 1;
+    text-align: center;
+    padding-right: 0px;
+    justify-content: right;
     margin-right: 10px;
-    min-height: fit-content;
+}
+
+
+
+.even-line {
+    background-color: #f9f9f9;
+}
+
+.odd-line {
+    background-color: #ffffff;
+}
+/* Play Status Bar */
+.play-status-bar {
+    width: 100%;
+    height: 10px;
+    background-color: #ddd; /* Background color for the status bar */
+    border-radius: 5px;
+    margin-top: 10px;
+    overflow: hidden; /* Ensure the progress bar doesn't overflow */
+}
+
+.play-status-progress {
+    height: 100%;
+    width: 0%; /* Initially set to 0% */
+    background-color: #007bff; /* Progress bar color */
+    transition: width 0.1s linear; /* Smooth transition for progress */
+}
+
+.status-message {
+    transition: opacity 1s ease-in-out; /* Smooth transition for opacity changes */
+}
+
+.status-label {
+    font-weight: 501;
+}
+
+.play-status-bar {
+    width: 100%;
+    height: 10px;
+    background-color: #ddd;
+    position: relative;
+    cursor: pointer;
+}
+
+.play-status-progress {
+    height: 100%;
+    background-color: #007bff;
+    width: 0%;
+}
+
+.play-status-handle {
+    width: 15px;
+    height: 15px;
+    background-color: #007bff;
+    border-radius: 50%;
+    position: absolute;
+    top: -2.5px;
+    left: 0;
+    cursor: pointer;
+}
+
+.time-display {
+    margin-top: 10px;
+    font-size: 14px;
+    color: #333;
 }

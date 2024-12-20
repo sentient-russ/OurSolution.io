@@ -91,12 +91,14 @@ namespace os.Controllers
             }
             return RedirectToAction(nameof(ManageAccounts));
         }
-        [Authorize(Roles = "Administrator")]
         [HttpPost]
+        [Authorize(Roles = "Administrator")]
+        [RequestSizeLimit(300 * 1024 * 1024)] // 200MB        
         public async Task<IActionResult> UploadSpeaker([Bind("SpeakerId, FileName, FirstName, LastName, Description, NumUpVotes, DateRecorded, UploadDate, UploadedBy, SpeakerStatus, FormFile")] SpeakerModel newSpeakerIn)
         {
             var LoggedInAppUser = await _userManager.GetUserAsync(User);
-            // enforce speaker name formatting rules
+
+            // reformat names of the speaker and uploading user to capital first name letter followed by lowercase and the same for the speaker.
             string speakerFirstNameInitial = newSpeakerIn.FirstName.Substring(0, 1).ToUpper();
             string speakerFirstNamePostFix = newSpeakerIn.FirstName.Substring(1).ToLower();
             string speakerFirstName = speakerFirstNameInitial + speakerFirstNamePostFix;
@@ -105,7 +107,7 @@ namespace os.Controllers
             string speakerLastNamePostFix = newSpeakerIn.LastName.Substring(1).ToLower();
             string speakerLastName = speakerLastNameInitial + speakerLastNamePostFix;
             newSpeakerIn.LastName = speakerLastName;
-
+            string? speakerAbbreviation = newSpeakerIn.FirstName + "_" + newSpeakerIn.LastName.Substring(0, 1).ToUpper();
             string? LoggedInUserAbbreviation = LoggedInAppUser.FirstName + "_" + LoggedInAppUser.LastName.Substring(0, 1).ToUpper();
 
             if (newSpeakerIn.FormFile == null || newSpeakerIn.FormFile.Length == 0)
@@ -114,10 +116,10 @@ namespace os.Controllers
                 return View("AddSpeaker");
             }
 
-            const long max_size = 50 * 1024 * 1024;
+            const long max_size = 200 * 1024 * 1024;
             if (newSpeakerIn.FormFile.Length > max_size)
             {
-                ViewBag.StatusMessage = "The file size must be less than 50MB.";
+                ViewBag.StatusMessage = $"The file size must be less than 200MB. THe current file is {newSpeakerIn.FormFile.Length.ToString()}";
                 return View("AddSpeaker");
             }
 
@@ -130,7 +132,7 @@ namespace os.Controllers
 
             DateTimeOffset current_time = DateTimeOffset.UtcNow;
             long ms_time = current_time.ToUnixTimeMilliseconds();
-            string new_file_name = LoggedInUserAbbreviation + "_" + ms_time.ToString() + ".mp3";
+            string new_file_name = speakerAbbreviation + "_" + ms_time.ToString() + ".mp3";
 
             var filePath = Path.Combine("wwwroot", "uploads", new_file_name);
             try
@@ -148,11 +150,12 @@ namespace os.Controllers
 
             if (LoggedInAppUser != null)
             {
-                newSpeakerIn.FileName = new_file_name;
+                newSpeakerIn.SecretFileName = new_file_name;
+                newSpeakerIn.DisplayFileName = speakerAbbreviation;
                 newSpeakerIn.UploadedById = LoggedInAppUser.Id;
                 newSpeakerIn.UploadedBy = LoggedInUserAbbreviation;
-
                 var succeeded = _dbConnectionService.AddSpeaker(newSpeakerIn);
+
                 if (succeeded)
                 {
                     ViewBag.StatusMessage = "File uploaded successfully.";

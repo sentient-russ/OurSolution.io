@@ -6,24 +6,53 @@
         @ViewBag.StatusMessage
     </div>
 }
-
 <audio id="audioPlayer" controls hidden></audio>
-<center><h1>Externally Authorized Speakers</h1></center>
+<center><h1>Public Speakers</h1></center>
 <div class="container-row">
     <div class="player-container">
-        <div class="satus-window">
-            <div class="status-message-row"><span class="status-message" id="status-message">Stopped</span>...</div>
-            <div class="speaker-name-row"><span class="spaker-name" id="speaker-name"></span></div>
+        <div class="status-window">
+            <!-- Status Message Row -->
+            <div class="status-message-row">
+                <span class="status-label">Status: </span><span class="status-message" id="status-message">Stopped</span>
+            </div>
+            <!-- Speaker Name Row -->
+            <div class="speaker-name-row">
+                <span class="status-label">Speaker: </span><span class="speaker-name" id="speaker-name"></span>
+            </div>
+            <!-- Play Status Bar -->
+            <div class="play-status-bar" id="play-status-bar">
+                <div class="play-status-progress" id="play-status-progress"></div>
+                <div class="play-status-handle" id="play-status-handle"></div>
+            </div>
+            <div class="time-display">
+                <span id="current-time">00:00</span> / <span id="total-duration">00:00</span>
+            </div>
         </div>
         <div class="player-controls">
             <button id="previous" class="btn btn-primary">Previous</button>
             <button id="play" class="btn btn-primary">Play</button>
             <button id="pause" class="btn btn-primary">Pause</button>
             <button id="stop" class="btn btn-primary">Stop</button>
-            <button id="next" class="btn btn-primary">Next</button>           
+            <button id="next" class="btn btn-primary">Next</button>
+        </div>
+        <!-- Search Input Box -->
+        <div class="search-container">
+            <input type="text" id="searchInput" placeholder="Filter by No. or Speaker..." class="search-input">
+            <img src="~/img/search.svg" class="search-img" />
+        </div>
+        <div class="player-headings">
+            <div class="player-id-column">
+                <span class="player-heading-txt">Num.</span>
+            </div>
+            <div class="player-speaker-column">
+                <span class="player-heading-txt">Speaker</span>
+            </div>
+            <div class="player-talkdate-column">
+                <span class="player-heading-txt">Talk Date</span>
+            </div>
         </div>
         <div class="speaker-container">
-            <div id="fileList">
+            <div class="file-list-container" id="fileList">
                 <!-- File list will be populated here -->
             </div>
         </div>

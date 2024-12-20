@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿/*SpeakerModel.cs*/
+using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -6,7 +7,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace os.Models
 {
     [ApiController]
-    [Route("[Admin]")]
+    [Route("[Controller]")]
     [BindProperties(SupportsGet = true)]
     public class SpeakerModel
     {
@@ -64,7 +65,6 @@ namespace os.Models
 
         [NotMapped]
         [Required]
-        [BindProperty]
         public IFormFile? FormFile { get; set; }
     }
 }

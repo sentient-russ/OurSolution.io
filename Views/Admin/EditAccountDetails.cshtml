@@ -1,10 +1,18 @@
 ﻿@model os.Areas.Identity.Data.AppUser
-
+@{
+    string? statusMessage = ViewBag.StatusMessage;
+}
 <center><h1>Edit Member</h1></center>
 
 <hr />
 <div class="edit-container-row">
     <div class="edit-container-column">
+        @if (!string.IsNullOrEmpty(statusMessage))
+        {
+            <div class="alert alert-info">
+                @statusMessage
+            </div>
+        }
         <form asp-action="UpdateAccountDetails">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
             <input type="hidden" asp-for="Id" />
