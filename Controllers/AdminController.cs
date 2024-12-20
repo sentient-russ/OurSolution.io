@@ -91,33 +91,46 @@ namespace os.Controllers
             }
             return RedirectToAction(nameof(ManageAccounts));
         }
-        [HttpPost]
         [Authorize(Roles = "Administrator")]
+        [HttpPost]
         public async Task<IActionResult> UploadSpeaker([Bind("SpeakerId, FileName, FirstName, LastName, Description, NumUpVotes, DateRecorded, UploadDate, UploadedBy, SpeakerStatus, FormFile")] SpeakerModel newSpeakerIn)
         {
+            var LoggedInAppUser = await _userManager.GetUserAsync(User);
+            // enforce speaker name formatting rules
+            string speakerFirstNameInitial = newSpeakerIn.FirstName.Substring(0, 1).ToUpper();
+            string speakerFirstNamePostFix = newSpeakerIn.FirstName.Substring(1).ToLower();
+            string speakerFirstName = speakerFirstNameInitial + speakerFirstNamePostFix;
+            newSpeakerIn.FirstName = speakerFirstName;
+            string speakerLastNameInitial = newSpeakerIn.LastName.Substring(0, 1).ToUpper();
+            string speakerLastNamePostFix = newSpeakerIn.LastName.Substring(1).ToLower();
+            string speakerLastName = speakerLastNameInitial + speakerLastNamePostFix;
+            newSpeakerIn.LastName = speakerLastName;
+
+            string? LoggedInUserAbbreviation = LoggedInAppUser.FirstName + "_" + LoggedInAppUser.LastName.Substring(0, 1).ToUpper();
+
             if (newSpeakerIn.FormFile == null || newSpeakerIn.FormFile.Length == 0)
             {
                 ViewBag.StatusMessage = "No file selected.";
-                return View("UploadSpeaker");
+                return View("AddSpeaker");
             }
 
             const long max_size = 50 * 1024 * 1024;
             if (newSpeakerIn.FormFile.Length > max_size)
             {
                 ViewBag.StatusMessage = "The file size must be less than 50MB.";
-                return View("UploadSpeaker");
+                return View("AddSpeaker");
             }
 
             var fileExtension = Path.GetExtension(newSpeakerIn.FormFile.FileName).ToLowerInvariant();
             if (fileExtension != ".mp3")
             {
                 ViewBag.StatusMessage = "The file type must be a .mp3 type.";
-                return View("UploadSpeaker");
+                return View("AddSpeaker");
             }
 
             DateTimeOffset current_time = DateTimeOffset.UtcNow;
             long ms_time = current_time.ToUnixTimeMilliseconds();
-            string new_file_name = ms_time.ToString() + ".mp3";
+            string new_file_name = LoggedInUserAbbreviation + "_" + ms_time.ToString() + ".mp3";
 
             var filePath = Path.Combine("wwwroot", "uploads", new_file_name);
             try
@@ -130,14 +143,14 @@ namespace os.Controllers
             catch (Exception ex)
             {
                 ViewBag.StatusMessage = "Error uploading file: " + ex.Message;
-                return View("UploadSpeaker");
+                return View("AddSpeaker");
             }
 
-            var user = await _userManager.GetUserAsync(User);
-            if (user != null)
+            if (LoggedInAppUser != null)
             {
                 newSpeakerIn.FileName = new_file_name;
-                newSpeakerIn.UploadedBy = user.Id;
+                newSpeakerIn.UploadedById = LoggedInAppUser.Id;
+                newSpeakerIn.UploadedBy = LoggedInUserAbbreviation;
 
                 var succeeded = _dbConnectionService.AddSpeaker(newSpeakerIn);
                 if (succeeded)
@@ -148,13 +161,67 @@ namespace os.Controllers
                 else
                 {
                     ViewBag.StatusMessage = "Error uploading. Try again or contact development.";
-                    return View("UploadSpeaker");
+                    return View("AddSpeaker");
                 }
             }
             else
             {
                 ViewBag.StatusMessage = "User not found.";
-                return View("UploadSpeaker");
+                return View("AddSpeaker");
+            }
+        }
+
+        [Authorize(Roles = "Administrator")]
+        [HttpGet]
+        public async Task<IActionResult> EditSpeakerDetails(string? Id)
+        {
+            if (!int.TryParse(Id, out int id))
+            {
+                return BadRequest("Invalid speaker Id format.");
+            }
+            SpeakerModel speaker = _dbConnectionService.GetSpeakerById(id);
+            return View(speaker);
+        }
+
+        [Authorize(Roles = "Administrator")]
+        [HttpPost]
+        public async Task<IActionResult> UpdateSpeaker([Bind("SpeakerId, FileName, FirstName, LastName, Description, NumUpVotes, DateRecorded, UploadDate, UploadedBy, SpeakerStatus, FormFile")] SpeakerModel newSpeakerIn)
+        {
+            var LoggedInAppUser = await _userManager.GetUserAsync(User);
+            // enforce speaker name formatting rules
+            string speakerFirstNameInitial = newSpeakerIn.FirstName.Substring(0, 1).ToUpper();
+            string speakerFirstNamePostFix = newSpeakerIn.FirstName.Substring(1).ToLower();
+            string speakerFirstName = speakerFirstNameInitial + speakerFirstNamePostFix;
+            newSpeakerIn.FirstName = speakerFirstName;
+            string speakerLastNameInitial = newSpeakerIn.LastName.Substring(0, 1).ToUpper();
+            string speakerLastNamePostFix = newSpeakerIn.LastName.Substring(1).ToLower();
+            string speakerLastName = speakerLastNameInitial + speakerLastNamePostFix;
+            newSpeakerIn.LastName = speakerLastName;
+
+            string? LoggedInUserAbbreviation = LoggedInAppUser.FirstName + "_" + LoggedInAppUser.LastName.Substring(0, 1).ToUpper();
+
+            DateTimeOffset current_time = DateTimeOffset.UtcNow;
+            long ms_time = current_time.ToUnixTimeMilliseconds();
+            string new_file_name = LoggedInUserAbbreviation + "_" + ms_time.ToString() + ".mp3";
+
+            if (LoggedInAppUser != null)
+            {
+                var succeeded = _dbConnectionService.UpdateSpeakerDetails(newSpeakerIn);
+                if (succeeded)
+                {
+                    ViewBag.StatusMessage = "Speaker updated successfully.";
+                    return RedirectToAction("Index");
+                }
+                else
+                {
+                    ViewBag.StatusMessage = "Error updating. Try again or contact development.";
+                    return View("UpdateSpeaker");
+                }
+            }
+            else
+            {
+                ViewBag.StatusMessage = "User not found.";
+                return View("UpdateSpeaker");
             }
         }
         [Authorize(Roles = "Administrator")]

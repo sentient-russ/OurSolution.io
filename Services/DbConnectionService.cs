@@ -32,15 +32,17 @@ namespace os.Services
                 {
                     SpeakerModel nextSpeaker = new SpeakerModel();
                     nextSpeaker.SpeakerId = reader1.IsDBNull(0) ? null : reader1.GetInt32(0);
-                    nextSpeaker.FileName = reader1.IsDBNull(1) ? null : reader1.GetString(1);
-                    nextSpeaker.FirstName = reader1.IsDBNull(2) ? null : reader1.GetString(2);
-                    nextSpeaker.LastName = reader1.IsDBNull(3) ? null : reader1.GetString(3);
-                    nextSpeaker.Description = reader1.IsDBNull(4) ? null : reader1.GetString(4);
-                    nextSpeaker.NumUpVotes = reader1.IsDBNull(5) ? null : reader1.GetInt32(5);
-                    nextSpeaker.DateRecorded = reader1.IsDBNull(6) ? null : reader1.GetDateTime(6);
-                    nextSpeaker.UploadDate = reader1.IsDBNull(7) ? null : reader1.GetDateTime(7);
-                    nextSpeaker.UploadedBy = reader1.IsDBNull(8) ? null : reader1.GetString(8);
-                    nextSpeaker.SpeakerStatus = reader1.IsDBNull(9) ? null : reader1.GetString(9);
+                    nextSpeaker.FirstName = reader1.IsDBNull(1) ? null : reader1.GetString(1);
+                    nextSpeaker.LastName = reader1.IsDBNull(2) ? null : reader1.GetString(2);
+                    nextSpeaker.Description = reader1.IsDBNull(3) ? null : reader1.GetString(3);
+                    nextSpeaker.NumUpVotes = reader1.IsDBNull(4) ? null : reader1.GetInt32(4);
+                    nextSpeaker.DateRecorded = reader1.IsDBNull(5) ? null : reader1.GetDateTime(5);
+                    nextSpeaker.UploadDate = reader1.IsDBNull(6) ? null : reader1.GetDateTime(6);
+                    nextSpeaker.UploadedBy = reader1.IsDBNull(7) ? null : reader1.GetString(7);
+                    nextSpeaker.SpeakerStatus = reader1.IsDBNull(8) ? null : reader1.GetString(8);
+                    nextSpeaker.DisplayFileName = reader1.IsDBNull(9) ? null : reader1.GetString(9);
+                    nextSpeaker.SecretFileName = reader1.IsDBNull(10) ? null : reader1.GetString(10);
+                    nextSpeaker.UploadedById = reader1.IsDBNull(11) ? null : reader1.GetString(11);
                     foundSpeakers.Add(nextSpeaker);
                 }
                 reader1.Close();
@@ -53,12 +55,26 @@ namespace os.Services
             return foundSpeakers;
         }
         /*
+         * Gets a single speaker details by id
+         */
+        public SpeakerModel GetSpeakerById(int id)
+        {
+            List<SpeakerModel> speakers = GetSpeakersList();
+            SpeakerModel foundSpeaker = new SpeakerModel();
+            foreach(SpeakerModel speaker in speakers)
+            {
+                if(speaker.SpeakerId == id) { foundSpeaker = speaker; break; }
+            }
+            return foundSpeaker;
+
+        }
+        /*
          * Updates a speaker's details
          */
         public bool UpdateSpeakerDetails(SpeakerModel speakerIn)
         {
             // Log the event; must take place before the update to capture before and after state
-            var email = _httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.Email);
+            var email = _httpContextAccessor.HttpContext?.User?.Identity.Name;
             AppUser userDetails = GetUserDetailsByEmail(email);
             List<SpeakerModel> speakers = GetSpeakersList();
             SpeakerModel previouseSpeakerModel = new SpeakerModel();
@@ -83,20 +99,16 @@ namespace os.Services
             try
             {
                 using var conn1 = new MySqlConnection(Environment.GetEnvironmentVariable("DbConnectionString"));
-                string command = "UPDATE os.Speakers SET FileName = @FileName, FirstName = @FirstName, LastName = @LastName," +
-                    " Description = @Description, NumUpVotes = @NumUpVotes ,DateRecorded = @DateRecorded, UploadDate = @UploadDate," +
-                    " UploadedBy = @UploadedBy, SpeakerStatus = @SpeakerStatus WHERE SpeakerId LIKE @SpeakerId";
+                string command = "UPDATE os.Speakers SET FirstName = @FirstName, LastName = @LastName," +
+                    " Description = @Description ,DateRecorded = @DateRecorded, SpeakerStatus = @SpeakerStatus " +
+                    " WHERE SpeakerId LIKE @SpeakerId";
                 conn1.Open();
                 MySqlCommand cmd1 = new MySqlCommand(command, conn1);
                 cmd1.Parameters.AddWithValue("@SpeakerId", speakerIn.SpeakerId);
-                cmd1.Parameters.AddWithValue("@FileName", speakerIn.FileName);
                 cmd1.Parameters.AddWithValue("@FirstName", speakerIn.FirstName);
                 cmd1.Parameters.AddWithValue("@LastName", speakerIn.LastName);
                 cmd1.Parameters.AddWithValue("@Description", speakerIn.Description);
-                cmd1.Parameters.AddWithValue("@NumUpVotes", speakerIn.NumUpVotes);
                 cmd1.Parameters.AddWithValue("@DateRecorded", speakerIn.DateRecorded);
-                cmd1.Parameters.AddWithValue("@UploadDate", speakerIn.UploadDate);
-                cmd1.Parameters.AddWithValue("@UploadedBy", speakerIn.UploadedBy);
                 cmd1.Parameters.AddWithValue("@SpeakerStatus", speakerIn.SpeakerStatus);
 
                 MySqlDataReader reader1 = cmd1.ExecuteReader();
@@ -116,23 +128,22 @@ namespace os.Services
          */
         public bool AddSpeaker(SpeakerModel speakerIn)
         {
-
-            // Log the event; must take place before the update to capture before and after state
-            var email = _httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.Email);
+            // Log the event; must take place before the update to capture before and after state.
+            var email = _httpContextAccessor.HttpContext?.User?.Identity.Name;
             AppUser userDetails = GetUserDetailsByEmail(email);
             string beforeUpdate = "No previous record";
             string afterUpdate = SpeakerDetailsString(speakerIn);
             CreateLog(email, "AddSpeaker() called.", beforeUpdate, afterUpdate);
 
             bool Succeeded = false;
+            
             try
             {
                 using var conn1 = new MySqlConnection(Environment.GetEnvironmentVariable("DbConnectionString"));
-                string command = "INSERT INTO os.Speakers (FileName, FirstName, LastName, Description, NumUpVotes, DateRecorded, UploadDate, UploadedBy, SpeakerStatus) " +
-                    "VALUES (@FileName, @FirstName, @LastName, @Description, @NumUpVotes, @DateRecorded, @UploadDate, @UploadedBy, @SpeakerStatus)";
+                string command = "INSERT INTO os.Speakers (FirstName, LastName, Description, NumUpVotes, DateRecorded, UploadDate, UploadedBy, SpeakerStatus, DisplayFileName, SecretFileName, UploadedById) " +
+                    "VALUES (@FirstName, @LastName, @Description, @NumUpVotes, @DateRecorded, @UploadDate, @UploadedBy, @SpeakerStatus, @DisplayFileName, @SecretFileName, @UploadedById)";
                 conn1.Open();
                 MySqlCommand cmd1 = new MySqlCommand(command, conn1);
-                cmd1.Parameters.AddWithValue("@FileName", speakerIn.FileName);
                 cmd1.Parameters.AddWithValue("@FirstName", speakerIn.FirstName);
                 cmd1.Parameters.AddWithValue("@LastName", speakerIn.LastName);
                 cmd1.Parameters.AddWithValue("@Description", speakerIn.Description);
@@ -141,6 +152,9 @@ namespace os.Services
                 cmd1.Parameters.AddWithValue("@UploadDate", speakerIn.UploadDate);
                 cmd1.Parameters.AddWithValue("@UploadedBy", speakerIn.UploadedBy);
                 cmd1.Parameters.AddWithValue("@SpeakerStatus", speakerIn.SpeakerStatus);
+                cmd1.Parameters.AddWithValue("@DisplayFileName", speakerIn.DisplayFileName);
+                cmd1.Parameters.AddWithValue("@SecretFileName", speakerIn.SecretFileName);
+                cmd1.Parameters.AddWithValue("@UploadedById", speakerIn.UploadedById);
 
                 MySqlDataReader reader1 = cmd1.ExecuteReader();
                 reader1.Close();

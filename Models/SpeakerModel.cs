@@ -5,24 +5,31 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace os.Models
 {
+    [ApiController]
+    [Route("[Admin]")]
+    [BindProperties(SupportsGet = true)]
     public class SpeakerModel
     {
         [Key]
         [DisplayName("Speaker Id:")]
         public int? SpeakerId { get; set; } = 0;
 
+        [NotMapped] //Only used when uploading
+        [DisplayName("File Name In:")]
+        public string? FileName { get; set; }
+
         [Required]
-        [DisplayName("Speaker First Name:")]
+        [DisplayName("First Name: (Speaker)")]
         [DataType(DataType.Text)]
         [StringLength(100, MinimumLength = 2)]
         public string? FirstName { get; set; }
 
-        [DisplayName("Speaker Last Name / Initial:")]
+        [DisplayName("Last Initial:")]
         [DataType(DataType.Text)]
         [StringLength(100, MinimumLength = 1)]
         public string? LastName { get; set; }
 
-        [DisplayName("Recording Description:")]
+        [DisplayName("Description:")]
         [DataType(DataType.Text)]
         [StringLength(500, MinimumLength = 1)]
         public string? Description { get; set; }
@@ -44,10 +51,16 @@ namespace os.Models
         public string? UploadedBy { get; set; }
 
         [DisplayName("Speaker Status:")]
-        public string? SpeakerStatus { get; set; } = "Active";
+        public string? SpeakerStatus { get; set; } = "Enabled";
 
         [DisplayName("File Name:")]
-        public string? FileName { get; set; }
+        public string? DisplayFileName { get; set; }
+
+        [DisplayName("Secret Filename:")]
+        public string? SecretFileName { get; set; }
+
+        [DisplayName("Uploaded By Id:")]
+        public string? UploadedById { get; set; }
 
         [NotMapped]
         [Required]

@@ -132,7 +132,7 @@ builder.Services.AddMvc();
 /*builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
-        options.Cookie.Name = "YourAppCookieName"; // Set a custom cookie name
+        options.Cookie.Name = "OurSolutionCookie"; // Set a custom cookie name
         options.Cookie.HttpOnly = true; // Prevent client-side JavaScript from accessing the cookie
         options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest; // Use secure cookies in production
         options.Cookie.SameSite = SameSiteMode.Lax; // Protect against CSRF attacks
@@ -177,6 +177,7 @@ app.MapControllerRoute(
 app.MapControllerRoute(
     name: "Admin",
     pattern: "{controller=AdminController}/{action=Index}/{id?}");
+
 app.MapControllerRoute(
     name: "Member",
     pattern: "{controller=MemberController}/{action=Index}/{id?}");

@@ -250,6 +250,20 @@ th, td {
     text-align: center;
     vertical-align: middle;
 }
+
+.la{
+    text-align: left;
+}
+.ca{
+    text-align: center;
+}
+.pl20{
+    padding-left:20px !important;
+}
+.ml20{
+    margin-left:20px;
+}
+
 .hidden {
     display: none;
 }

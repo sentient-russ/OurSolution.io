@@ -1,0 +1,84 @@
+﻿@model os.Models.SpeakerModel
+@{
+    ViewData["Title"] = "Edit Speaker";
+}
+<div class="edit-container-row">
+    <div class="edit-container-column">
+        <div class="text-center">
+            <img src="~/img/speaker.svg" style="min-height: 100px;" />
+        </div>
+        <div>
+            <center><h1>Edit Speaker</h1></center>
+        </div>
+        <form asp-action="UpdateSpeaker" method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input type="hidden" asp-for="SpeakerId" />
+            <div class="form-group">
+                <label asp-for="FirstName" class="control-label cust-label"></label>
+                <input asp-for="FirstName" class="form-control" />
+                <span asp-validation-for="FirstName" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="LastName" class="control-label cust-label"></label>
+                <input asp-for="LastName" class="form-control" />
+                <span asp-validation-for="LastName" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Description" class="control-label cust-label"></label>
+                <textarea asp-for="Description" class="form-control"></textarea>
+                <span asp-validation-for="Description" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="NumUpVotes" class="control-label cust-label" hidden></label>
+                <input asp-for="NumUpVotes" class="form-control" hidden />
+                <span asp-validation-for="NumUpVotes" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="DateRecorded" class="control-label cust-label"></label>
+                <input asp-for="DateRecorded" class="form-control" />
+                <span asp-validation-for="DateRecorded" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="UploadDate" class="control-label cust-label"></label>
+                <input asp-for="UploadDate" class="form-control" readonly/>
+                <span asp-validation-for="UploadDate" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="UploadedBy" class="control-label cust-label" ></label>
+                <input asp-for="UploadedBy" class="form-control" readonly/>
+                <span asp-validation-for="UploadedBy" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="DisplayFileName" class="control-label cust-label" hidden></label>
+                <input asp-for="DisplayFileName" class="form-control" hidden />
+                <span asp-validation-for="DisplayFileName" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="SecretFileName" class="control-label cust-label" hidden></label>
+                <input asp-for="SecretFileName" class="form-control" hidden />
+                <span asp-validation-for="SecretFileName" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="UploadedById" class="control-label cust-label"></label>
+                <input asp-for="UploadedById" class="form-control" readonly/>
+                <span asp-validation-for="UploadedById" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="SpeakerStatus" class="control-label cust-label"></label>
+                <select asp-for="SpeakerStatus" class="form-drop-down form-select" aria-required="true">
+                    <option default id="Active">Active</option>
+                    <option default id="Disabled">Disabled</option>
+                </select>
+                <span asp-validation-for="SpeakerStatus" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <a href="@Url.Action("ViewSpeakers", "Admin")" class="btn btn-secondary edit-btn">Back</a>
+                <input type="submit" value="Save Changes" class="btn btn-primary edit-btn" />
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
