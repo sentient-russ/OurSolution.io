@@ -46,7 +46,7 @@ namespace os.Models
         [DisplayName("Date Uploaded:")]
         [DisplayFormat(DataFormatString = "{0:yyyy-MM-dd}", ApplyFormatInEditMode = true)]
         [DataType(DataType.Date)]
-        public DateTime? UploadDate { get; set; }
+        public DateTime? UploadDate { get; set; } = DateTime.Now;
 
         [DisplayName("Uploaded By:")]
         public string? UploadedBy { get; set; }
@@ -62,6 +62,9 @@ namespace os.Models
 
         [DisplayName("Uploaded By Id:")]
         public string? UploadedById { get; set; }
+
+        [DisplayName("Visibility:")]
+        public string? Visibility { get; set; }
 
         [NotMapped]
         [Required]

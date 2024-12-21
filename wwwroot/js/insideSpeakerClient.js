@@ -13,7 +13,7 @@
     }
 
     async function fetchFiles() {
-        const response = await fetch('/api/media/speakers');
+        const response = await fetch('/api/media/allspeakers');
         if (response.ok) {
             files = await response.json();
             displayFiles();

@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using os.Models;
 using os.Services;
 
@@ -14,12 +15,33 @@ namespace os.Controllers
             _connectionService = dbConnectionService;
         }
 
-        [HttpGet("files")]
+        [Authorize(Roles = "Administrator,Member")]
+        [HttpGet("allspeakers")]
+        public IActionResult GetAllSpeakers()
+        {
+            try
+            {
+                List<SpeakerModel> speakers = _connectionService.GetAllSpeakersList();
+                if (speakers == null || speakers.Count == 0)
+                {
+                    return NotFound("No speakers found."); // Return a 404 if no speakers are found
+                }
+
+                return Ok(speakers);
+            }
+            catch (Exception ex)
+            {
+                // Log the exception
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+        // This method returns a list of public speakers
+        [HttpGet("speakers")]
         public IActionResult GetFiles()
         {
             try
             {
-                List<SpeakerModel> speakers = _connectionService.GetSpeakersList();
+                List<SpeakerModel> speakers = _connectionService.GetPublicSpeakersList();
                 if (speakers == null || speakers.Count == 0)
                 {
                     return NotFound("No speakers found."); // Return a 404 if no speakers are found

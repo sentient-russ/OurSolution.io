@@ -3,6 +3,7 @@ using os.Models;
 using os.Areas.Identity.Data;
 using MySql.Data.MySqlClient;
 using System.Security.Claims;
+using MySqlX.XDevAPI.CRUD;
 
 namespace os.Services
 {
@@ -15,9 +16,9 @@ namespace os.Services
         {
             _httpContextAccessor = httpContextAccessor;
         }
-       /*
-        * Gets a list of speakers
-        */
+        /*
+         * Gets a list of all speakers for list management
+         */
         public List<SpeakerModel> GetSpeakersList()
         {
             List<SpeakerModel> foundSpeakers = new List<SpeakerModel>();
@@ -43,6 +44,7 @@ namespace os.Services
                     nextSpeaker.DisplayFileName = reader1.IsDBNull(9) ? null : reader1.GetString(9);
                     nextSpeaker.SecretFileName = reader1.IsDBNull(10) ? null : reader1.GetString(10);
                     nextSpeaker.UploadedById = reader1.IsDBNull(11) ? null : reader1.GetString(11);
+                    nextSpeaker.Visibility = reader1.IsDBNull(12) ? null : reader1.GetString(12);
                     foundSpeakers.Add(nextSpeaker);
                 }
                 reader1.Close();
@@ -52,7 +54,106 @@ namespace os.Services
             {
                 Console.WriteLine(ex.ToString());
             }
+
             return foundSpeakers;
+        }
+        /*
+         * Gets a list of all enabled speakers for internal player display
+         */
+        public List<SpeakerModel> GetAllSpeakersList()
+        {
+            List<SpeakerModel> foundSpeakers = new List<SpeakerModel>();
+            try
+            {
+                using var conn1 = new MySqlConnection(Environment.GetEnvironmentVariable("DbConnectionString"));
+                string command = "SELECT * FROM os.Speakers";
+                conn1.Open();
+                MySqlCommand cmd1 = new MySqlCommand(command, conn1);
+                MySqlDataReader reader1 = cmd1.ExecuteReader();
+                while (reader1.Read())
+                {
+                    SpeakerModel nextSpeaker = new SpeakerModel();
+                    nextSpeaker.SpeakerId = reader1.IsDBNull(0) ? null : reader1.GetInt32(0);
+                    nextSpeaker.FirstName = reader1.IsDBNull(1) ? null : reader1.GetString(1);
+                    nextSpeaker.LastName = reader1.IsDBNull(2) ? null : reader1.GetString(2);
+                    nextSpeaker.Description = reader1.IsDBNull(3) ? null : reader1.GetString(3);
+                    nextSpeaker.NumUpVotes = reader1.IsDBNull(4) ? null : reader1.GetInt32(4);
+                    nextSpeaker.DateRecorded = reader1.IsDBNull(5) ? null : reader1.GetDateTime(5);
+                    nextSpeaker.UploadDate = reader1.IsDBNull(6) ? null : reader1.GetDateTime(6);
+                    nextSpeaker.UploadedBy = reader1.IsDBNull(7) ? null : reader1.GetString(7);
+                    nextSpeaker.SpeakerStatus = reader1.IsDBNull(8) ? null : reader1.GetString(8);
+                    nextSpeaker.DisplayFileName = reader1.IsDBNull(9) ? null : reader1.GetString(9);
+                    nextSpeaker.SecretFileName = reader1.IsDBNull(10) ? null : reader1.GetString(10);
+                    nextSpeaker.UploadedById = reader1.IsDBNull(11) ? null : reader1.GetString(11);
+                    nextSpeaker.Visibility = reader1.IsDBNull(12) ? null : reader1.GetString(12);
+                    foundSpeakers.Add(nextSpeaker);
+                }
+                reader1.Close();
+                conn1.Close();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+            }
+            // remove disabled speakers
+            List<SpeakerModel> EnabledSpeakers = new List<SpeakerModel>();
+            foreach (SpeakerModel speaker in foundSpeakers)
+            {
+                if (speaker.SpeakerStatus == "Active")
+                {
+                    EnabledSpeakers.Add(speaker);
+                }
+            }
+            return EnabledSpeakers;
+        }
+        /*
+         * Gets a list of all speakers
+         */
+        public List<SpeakerModel> GetPublicSpeakersList()
+        {
+            List<SpeakerModel> foundSpeakers = new List<SpeakerModel>();
+            try
+            {
+                using var conn1 = new MySqlConnection(Environment.GetEnvironmentVariable("DbConnectionString"));
+                string command = "SELECT * FROM os.Speakers";
+                conn1.Open();
+                MySqlCommand cmd1 = new MySqlCommand(command, conn1);
+                MySqlDataReader reader1 = cmd1.ExecuteReader();
+                while (reader1.Read())
+                {
+                    SpeakerModel nextSpeaker = new SpeakerModel();
+                    nextSpeaker.SpeakerId = reader1.IsDBNull(0) ? null : reader1.GetInt32(0);
+                    nextSpeaker.FirstName = reader1.IsDBNull(1) ? null : reader1.GetString(1);
+                    nextSpeaker.LastName = reader1.IsDBNull(2) ? null : reader1.GetString(2);
+                    nextSpeaker.Description = reader1.IsDBNull(3) ? null : reader1.GetString(3);
+                    nextSpeaker.NumUpVotes = reader1.IsDBNull(4) ? null : reader1.GetInt32(4);
+                    nextSpeaker.DateRecorded = reader1.IsDBNull(5) ? null : reader1.GetDateTime(5);
+                    nextSpeaker.UploadDate = reader1.IsDBNull(6) ? null : reader1.GetDateTime(6);
+                    nextSpeaker.UploadedBy = reader1.IsDBNull(7) ? null : reader1.GetString(7);
+                    nextSpeaker.SpeakerStatus = reader1.IsDBNull(8) ? null : reader1.GetString(8);
+                    nextSpeaker.DisplayFileName = reader1.IsDBNull(9) ? null : reader1.GetString(9);
+                    nextSpeaker.SecretFileName = reader1.IsDBNull(10) ? null : reader1.GetString(10);
+                    nextSpeaker.UploadedById = reader1.IsDBNull(11) ? null : reader1.GetString(11);
+                    nextSpeaker.Visibility = reader1.IsDBNull(12) ? null : reader1.GetString(12);
+                    foundSpeakers.Add(nextSpeaker);
+                }
+                reader1.Close();
+                conn1.Close();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+            }
+
+           List<SpeakerModel> publicSpeakers = new List<SpeakerModel>();
+            foreach (SpeakerModel speaker in foundSpeakers)
+            {
+                if (speaker.Visibility == "Universal" && speaker.SpeakerStatus == "Active")
+                {
+                    publicSpeakers.Add(speaker);
+                }
+            }
+            return publicSpeakers;
         }
         /*
          * Gets a single speaker details by id
@@ -100,8 +201,8 @@ namespace os.Services
             {
                 using var conn1 = new MySqlConnection(Environment.GetEnvironmentVariable("DbConnectionString"));
                 string command = "UPDATE os.Speakers SET FirstName = @FirstName, LastName = @LastName," +
-                    " Description = @Description ,DateRecorded = @DateRecorded, SpeakerStatus = @SpeakerStatus " +
-                    " WHERE SpeakerId LIKE @SpeakerId";
+                    " Description = @Description ,DateRecorded = @DateRecorded, SpeakerStatus = @SpeakerStatus, " +
+                    " Visibility = @Visibility WHERE SpeakerId LIKE @SpeakerId";
                 conn1.Open();
                 MySqlCommand cmd1 = new MySqlCommand(command, conn1);
                 cmd1.Parameters.AddWithValue("@SpeakerId", speakerIn.SpeakerId);
@@ -110,6 +211,7 @@ namespace os.Services
                 cmd1.Parameters.AddWithValue("@Description", speakerIn.Description);
                 cmd1.Parameters.AddWithValue("@DateRecorded", speakerIn.DateRecorded);
                 cmd1.Parameters.AddWithValue("@SpeakerStatus", speakerIn.SpeakerStatus);
+                cmd1.Parameters.AddWithValue("@Visibility", speakerIn.Visibility);
 
                 MySqlDataReader reader1 = cmd1.ExecuteReader();
                 reader1.Close();
@@ -138,8 +240,8 @@ namespace os.Services
             try
             {
                 using var conn1 = new MySqlConnection(Environment.GetEnvironmentVariable("DbConnectionString"));
-                string command = "INSERT INTO os.Speakers (FirstName, LastName, Description, NumUpVotes, DateRecorded, UploadDate, UploadedBy, SpeakerStatus, DisplayFileName, SecretFileName, UploadedById) " +
-                    "VALUES (@FirstName, @LastName, @Description, @NumUpVotes, @DateRecorded, @UploadDate, @UploadedBy, @SpeakerStatus, @DisplayFileName, @SecretFileName, @UploadedById)";
+                string command = "INSERT INTO os.Speakers (FirstName, LastName, Description, NumUpVotes, DateRecorded, UploadDate, UploadedBy, SpeakerStatus, DisplayFileName, SecretFileName, UploadedById, Visibility) " +
+                    "VALUES (@FirstName, @LastName, @Description, @NumUpVotes, @DateRecorded, @UploadDate, @UploadedBy, @SpeakerStatus, @DisplayFileName, @SecretFileName, @UploadedById, @Visibility)";
                 conn1.Open();
                 MySqlCommand cmd1 = new MySqlCommand(command, conn1);
                 cmd1.Parameters.AddWithValue("@FirstName", speakerIn.FirstName);
@@ -153,6 +255,7 @@ namespace os.Services
                 cmd1.Parameters.AddWithValue("@DisplayFileName", speakerIn.DisplayFileName);
                 cmd1.Parameters.AddWithValue("@SecretFileName", speakerIn.SecretFileName);
                 cmd1.Parameters.AddWithValue("@UploadedById", speakerIn.UploadedById);
+                cmd1.Parameters.AddWithValue("@Visibility", speakerIn.Visibility);
 
                 MySqlDataReader reader1 = cmd1.ExecuteReader();
                 reader1.Close();
@@ -179,7 +282,8 @@ namespace os.Services
             speakerString += speaker.DateRecorded.ToString() + ", ";
             speakerString += speaker.UploadDate.ToString() + ", ";
             speakerString += speaker.UploadedBy + ", ";
-            speakerString += speaker.SpeakerStatus;
+            speakerString += speaker.SpeakerStatus + ", ";
+            speakerString += speaker.Visibility;
             return speakerString;
         }
         /*

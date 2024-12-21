@@ -41,7 +41,7 @@
             </div>
             <div class="form-group">
                 <label asp-for="UploadDate" class="control-label cust-label"></label>
-                <input asp-for="UploadDate" class="form-control" />
+                <input asp-for="UploadDate" class="form-control" readonly/>
                 <span asp-validation-for="UploadDate" class="text-danger"></span>
             </div>
             <div class="form-group">
@@ -49,6 +49,14 @@
                 <select asp-for="SpeakerStatus" class="form-drop-down form-select" aria-required="true">
                     <option default id="Active">Active</option>
                     <option default id="Disabled">Disabled</option>
+                </select>
+                <span asp-validation-for="SpeakerStatus" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Visibility" class="control-label cust-label"></label>
+                <select asp-for="Visibility" class="form-drop-down form-select" aria-required="true">
+                    <option default id="Private">Private</option>
+                    <option default id="Universal">Universal</option>
                 </select>
                 <span asp-validation-for="SpeakerStatus" class="text-danger"></span>
             </div>
