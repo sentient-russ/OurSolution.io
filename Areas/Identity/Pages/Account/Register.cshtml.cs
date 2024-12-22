@@ -20,6 +20,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Logging;
 using os.Areas.Identity.Data;
+using os.Models;
 using os.Services;
 
 namespace os.Areas.Identity.Pages.Account
@@ -163,6 +164,15 @@ namespace os.Areas.Identity.Pages.Account
 
                     await _emailSender.SendEmailAsync(Input.Email, "Confirm your email",
                         $"Please confirm your account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
+
+                    // Send an email to the admin to approve the account
+                    List<RoleModel> adminRolesList = _dbConnectionService.GetUserRole("Administrator");
+                    string adminEmailSubject = $"Account approval needed - OurSolution.io (Sponsored by MagnaDigi.com) {user.FirstName} {user.LastName}";
+                    for (var i = 0; i < adminRolesList.Count; i++)
+                    {
+                        string adminEmailBody = $"Dear {adminRolesList[i].firstName} {adminRolesList[i].lastName} please unlock and assign a role to the user: {user.FirstName}, email: {user.Email}";
+                        await _emailSender.SendEmailAsync(adminRolesList[i].email, adminEmailSubject, adminEmailBody);
+                    }
 
                     if (_userManager.Options.SignIn.RequireConfirmedAccount)
                     {

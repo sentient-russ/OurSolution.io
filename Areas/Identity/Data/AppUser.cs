@@ -1,16 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.AspNetCore.Http;
-//using static System.Runtime.InteropServices.JavaScript.JSType;
+
 
 namespace os.Areas.Identity.Data
 {
@@ -76,7 +70,7 @@ namespace os.Areas.Identity.Data
         [DataType(DataType.Text)]
         [StringLength(100, MinimumLength = 1)]
         [DisplayName("User Role:")]
-        public string? UserRole { get; set; } = "Member";
+        public string? UserRole { get; set; } = "";
 
         [Required]
         [DataType(DataType.Text)]

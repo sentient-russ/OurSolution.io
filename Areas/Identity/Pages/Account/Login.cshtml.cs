@@ -91,6 +91,13 @@ namespace os.Areas.Identity.Pages.Account
                 if (result.Succeeded)
                 {
                     _logger.LogInformation("User logged in.");
+                    // directs new unaproved accounts to a "Awaiting confirmation" message if their acount has not been approved.
+                    if (user.UserRole == null || user.UserRole == "")
+                    {
+                        returnUrl += "Home/FirstLogin";
+                        _dbConnectionService.CreateLog(user.Email, "Unapproved account login attempted.", "No Change", "No Change");
+                        return LocalRedirect(returnUrl);
+                    }
                     // redirects users that have the Manager or Accountant roles to the accounting application
                     if (user.UserRole != null && user.UserRole != "")
                     {
