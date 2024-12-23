@@ -2,11 +2,13 @@
 @{
     string? statusMessage = ViewBag.StatusMessage;
 }
-<center><h1>Edit Member</h1></center>
 
-<hr />
 <div class="edit-container-row">
     <div class="edit-container-column">
+        <center>
+            <img src="~/img/user.svg" class="details-img"/>
+            <h2 class="light-txt">Edit Member</h2>
+        </center>
         @if (!string.IsNullOrEmpty(statusMessage))
         {
             <div class="alert alert-info">
@@ -82,7 +84,7 @@
                 <span asp-validation-for="ProfileImage" class="text-danger"></span>
             </div>
             <div class="form-group">                
-                <a href="@Url.Action("ManageAccounts", "Admin")" class="btn btn-secondary edit-btn">Back</a>
+                <a href="@Url.Action("ManageAccounts", "Admin")" class="btn btn-secondary edit-btn" style="padding-top:8px;">Back</a>
                 <input type="submit" value="Save" class="btn btn-primary edit-btn" />
             </div>
         </form>

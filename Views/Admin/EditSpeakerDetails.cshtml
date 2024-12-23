@@ -5,12 +5,10 @@
 }
 <div class="edit-container-row">
     <div class="edit-container-column">
-        <div class="text-center">
-            <img src="~/img/speaker.svg" style="min-height: 100px;" />
-        </div>
-        <div>
-            <center><h2 class="light-txt">Edit Speaker</h2></center>
-        </div>
+        <center>
+            <img src="~/img/speaker.svg" class="details-img" />
+            <h2 class="light-txt">Edit Speaker</h2>
+        </center>
         @if (!string.IsNullOrEmpty(statusMessage))
         {
             <div class="alert alert-info">
@@ -87,7 +85,7 @@
                 <span asp-validation-for="SpeakerStatus" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <a href="@Url.Action("ViewSpeakers", "Admin")" class="btn btn-secondary edit-btn">Back</a>
+                <a href="@Url.Action("ViewSpeakers", "Admin")" class="btn btn-secondary edit-btn" style="padding-top:8px;">Back</a>
                 <input type="submit" value="Save Changes" class="btn btn-primary edit-btn" />
             </div>
         </form>
