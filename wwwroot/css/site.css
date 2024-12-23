@@ -3,16 +3,17 @@ html {
     min-height: 100%;
     font-size: 12px;
 }
-
+.site-container {
+    max-width: 96vw;
+    margin-left: auto;
+    margin-right: auto;
+}
 .btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
   box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
 }
-
 a {
     color: #0778fd !important;
 }
-
-
 .nav-custom {
     backdrop-filter: blur(21px) saturate(118%);
     -webkit-backdrop-filter: blur(21px) saturate(118%);
@@ -27,11 +28,18 @@ a {
 .light-txt {
     color: #ffffffa6 !important;
 }
-
+.navbar-light .navbar-toggler {
+    color: rgba(252, 247, 247, 0.15);
+    border-color: rgba(255,255,255,.1);
+}
+.navbar-toggler:focus {
+    text-decoration: none;
+    outline: 0;
+    box-shadow: 0 0 0 .1rem;
+}
 .dark-txt {
     color: rgba(99, 99, 100, 0.81) !important;
 }
-
 .btn-primary {
     backdrop-filter: blur(5px) saturate(118%);
     -webkit-backdrop-filter: blur(5px) saturate(118%);
@@ -51,20 +59,16 @@ a {
     border: 1px solid rgba(255, 255, 255, 0.125);
     color: #e6e6e6;
 }
-
-
     .btn-primary.disabled, .btn-primary:disabled {
         color: #fff;
         background-color: #0d6efd55;
         border-color: #0d6efd;
     }
-
 .btn-outline-secondary {
     color: #6c757d;
     border-color: #6c757d;
     font-weight: 501;
 }
-
 body {
     margin-bottom: 60px;
     font-family: Arial, sans-serif;
@@ -79,6 +83,12 @@ footer {
     background: white;
     border: 1px solid;
     line-height: 18px !important;
+
+    backdrop-filter: blur(21px) saturate(118%);
+    -webkit-backdrop-filter: blur(21px) saturate(118%);
+    background-color: rgba(99, 99, 100, 0.21);
+    border: 1px solid rgba(255, 255, 255, 0.125);
+    color: #e6e6e6;
 }
 .login-container-row {
     display: flex;
@@ -256,7 +266,6 @@ footer {
     display: flex;
     flex-direction: row;
     justify-content: space-between;
-    max-width: 94vw;
     height: 40px;
 }
 .search-row-btn {
@@ -285,7 +294,6 @@ footer {
 
 .search-colum-3 {
     display: flex;
-    margin-right:10px;
 }
 text-cetner{
     display: flex;
@@ -636,4 +644,15 @@ input:-webkit-autofill:focus {
     padding:20px;
     padding-top: 0px;
 
+}
+
+@media screen and (max-width: 1000px) {
+    .container-row {
+        flex-direction: column;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    .btn-container {
+        width: unset;
+    }
 }
