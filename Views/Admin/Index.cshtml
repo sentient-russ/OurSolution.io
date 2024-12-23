@@ -4,7 +4,6 @@
 @using os.Models
 @inject UserManager<AppUser> UserManager
 @inject DbConnectionService DbConnectionService
-
 @{
     string? userid = User?.Identity?.IsAuthenticated == true ? UserManager.GetUserId(User) : null;
     string? role = "";
@@ -14,34 +13,37 @@
         role = user.UserRole;
     }
 }
-<h1 class="text-center">Administration Home</h1>
-<p class="text-center">Welcome @(User?.Identity?.IsAuthenticated == true ? UserManager.GetUserName(User) : "").</p>
-<p class="text-center">Your current role is: @role</p>
+<div class="text-center light-txt">
+    <h1>Administration Home</h1>
+    <p>Welcome @(User?.Identity?.IsAuthenticated == true ? UserManager.GetUserName(User) : "").</p>
+    <p>Your current role is: @role</p>
+</div>
+
 
 <div class="outer-container">
     <div class="container-row">
         <div class="btn-container">
             <div class="btn-row">
-                <a class="nav-link text-dark" asp-controller="Admin" asp-action="ViewSpeakers" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="Redirects to manage speakers page."><img class="btn-img" width="150" src="~/img/speakers.svg" /></a>
+                <a class="nav-link" asp-controller="Admin" asp-action="ViewSpeakers" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="Redirects to manage speakers page."><img class="btn-img" width="150" src="~/img/speakers.svg" /></a>
             </div>
             <div class="btn-row">
-                <span class="btn-label">Manage Speakers</span>
-            </div>
-        </div>
-        <div class="btn-container">
-            <div class="btn-row">
-                <a class="nav-link text-dark" asp-controller="Admin" asp-action="ManageAccounts" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="Redirect to the manage users page."><img class="btn-img" width="150" src="~/img/group.svg" /></a>
-            </div>
-            <div class="btn-row">
-                <span class="btn-label">Manage Users</span>
+                <span class="btn-label light-txt">Manage Speakers</span>
             </div>
         </div>
         <div class="btn-container">
             <div class="btn-row">
-                <a class="nav-link text-dark" asp-controller="Admin" asp-action="ViewLogs" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="View all event logs of the system."><img class="btn-img" width="150" src="~/img/security.svg" /></a>
+                <a class="nav-link" asp-controller="Admin" asp-action="ManageAccounts" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="Redirect to the manage users page."><img class="btn-img" width="150" src="~/img/group.svg" /></a>
             </div>
             <div class="btn-row">
-                <span class="btn-label">View Security Logs</span>
+                <span class="btn-label light-txt">Manage Users</span>
+            </div>
+        </div>
+        <div class="btn-container">
+            <div class="btn-row">
+                <a class="nav-link" asp-controller="Admin" asp-action="ViewLogs" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="View all event logs of the system."><img class="btn-img" width="150" src="~/img/security.svg" /></a>
+            </div>
+            <div class="btn-row">
+                <span class="btn-label light-txt">View Security Logs</span>
             </div>
         </div>
     </div>

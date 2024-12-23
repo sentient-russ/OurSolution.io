@@ -20,9 +20,7 @@
     }    
 }
 <audio id="audioPlayer" controls hidden></audio>
-<h1 class="text-center">Member Home</h1>
-<p class="text-center">Welcome @(User?.Identity?.IsAuthenticated == true ? UserManager.GetUserName(User) : "").</p>
-<center><h2>Private Speakers</h2></center>
+<center><h2 class="light-txt">Private Speakers</h2></center>
 <div class="container-row">
     <div class="player-container">
         <div class="status-window">
@@ -55,7 +53,7 @@
             <input type="text" id="searchInput" placeholder="Filter by No. or Speaker..." class="search-input">
             <img src="~/img/search.svg" class="search-img" />
         </div>
-        <div class="player-headings">
+        <div class="player-headings light-txt">
             <div class="player-id-column">
                 <span class="player-heading-txt">Num.</span>
             </div>

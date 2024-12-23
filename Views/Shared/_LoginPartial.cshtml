@@ -7,6 +7,18 @@
 @if (SignInManager.IsSignedIn(User))
 {
     <li class="nav-item">
+        @if (User.IsInRole("Administrator") || User.IsInRole("Member"))
+        {
+            <a class="nav-link " asp-area="" asp-controller="Member" asp-action="Index">Audio Player</a>
+        }
+    </li>
+    <li class="nav-item">
+        @if (User.IsInRole("Administrator"))
+        {
+            <a class="nav-link " asp-area="" asp-controller="Admin" asp-action="Index">System Settings</a>
+        }
+    </li>
+    <li class="nav-item">
         <a  class="nav-link text-dark" asp-area="Identity" asp-page="/Account/Manage/Index" title="Manage">Member Settings</a>
     </li>
     <li class="nav-item">
