@@ -661,7 +661,9 @@ input:-webkit-autofill:focus {
     padding-top: 0px;
 
 }
-
+.logo-large{
+    width: 75vw;
+}
 @media screen and (max-width: 1000px) {
     .container-row {
         flex-direction: column;
