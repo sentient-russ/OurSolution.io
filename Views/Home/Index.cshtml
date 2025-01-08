@@ -1,20 +1,49 @@
-﻿@* Index.cshtml *@
-@page
+﻿@model os.Controllers.HomeController
+@{
+    ViewData["Title"] = "Shared Member Login";
+}
+
 @if (ViewBag.StatusMessage != null)
 {
     <div class="alert alert-info">
         @ViewBag.StatusMessage
     </div>
 }
-<audio id="audioPlayer" controls hidden></audio>
-<center><h2 class="light-txt">Speaker Tapes Online</h2></center>
-<div class="intro-message light-txt text-center">
-    <p>Registration is required to access the speakers list.</p>
-</div>
-<div class="container-row">
-    <div class="logo-container">
-        <img src="~/img/logo_large.png" class="logo" />
 
+<div class="intro-message light-txt">
+    <p class="message-txt">A member-to-member shared password is required to access speaker recordings.</p>
+</div>
+
+<div class="container-column">
+    <div class="login-container-row">
+        <div class="login-container-column">
+            <section>
+                <form asp-controller="Home" asp-action="Index" method="post">
+                    <div class="login-logo light-txt">
+                        @* <img style="max-width:150px;" class="ai-logo" src="~/img/gcai_logo_light.png" /> *@
+                        <center>@ViewData["Title"]</center>
+                    </div>
+                    <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+                    <div class="form-floating mb-3" hidden>
+                        <input name="email" class="form-control" autocomplete="username" aria-required="true" placeholder="cs@mangadigi.com" value="cs@magnadigi.com" hidden/>
+                        <label hidden>Email</label>
+                        <span class="text-danger" hidden></span>
+                    </div>
+                    <div class="form-floating mb-3">
+                        <input name="password" type="password" class="form-control" autocomplete="current-password" aria-required="true" placeholder="******" />
+                        <label>Password</label>
+                        <span class="text-danger"></span>
+                    </div>
+                    <div>
+                        <button id="login-submit" type="submit" class="btn-primary">Listen</button>
+                    </div>
+                </form>
+            </section>
+        </div>
+    </div>
+    <div class="logo-container">
+        @* <img src="~/img/logo_large.png" class="logo-large" /> *@
+        <span class="presentedby-txt">Presented by: The Living in the Solution Group. Atl. GA</span>
     </div>
 @*     <div class="player-container">
         <div class="status-window">

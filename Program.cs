@@ -45,6 +45,8 @@ builder.WebHost.ConfigureKestrel((context, serverOptions) =>
 var environ = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
 var connectionString = "";
 var emailPass = "";
+var emailAddress = "";
+var emailServer = "";
 var serverVersion = new MySqlServerVersion(new Version(8, 8, 39));
 if (builder.Configuration["ASPNETCORE_ENVIRONMENT"] == "Production")
 {
@@ -69,6 +71,12 @@ else
     // Pulls connection string from development local version of secrets.json
     connectionString = builder.Configuration.GetConnectionString("OS_Remote");
     emailPass = builder.Configuration["OS_Email_Pass"];
+    emailAddress = builder.Configuration["OS_Email_Address"];
+    emailServer = builder.Configuration["OS_Email_Server"];
+
+    Environment.SetEnvironmentVariable("OS_Email_Pass", emailPass); // This is used in services to access the string
+    Environment.SetEnvironmentVariable("OS_Email_Address", emailAddress); // This is used in services to access the string
+    Environment.SetEnvironmentVariable("OS_Email_Server", emailServer); // This is used in services to access the string
 
     // DB context which allows migrations but does not auto retry with MySQL
     builder.Services.AddDbContext<ApplicationDbContext>(
@@ -80,7 +88,7 @@ else
     );
 }
 Environment.SetEnvironmentVariable("DbConnectionString", connectionString); // This is used in services to access the string
-Environment.SetEnvironmentVariable("OS_Email_Pass", emailPass); // This is used in services to access the string
+
 
 builder.Services.AddDefaultIdentity<AppUser>(options => options.SignIn.RequireConfirmedAccount = true)
     .AddDefaultTokenProviders()

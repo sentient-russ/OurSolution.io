@@ -20,7 +20,7 @@
     }    
 }
 <audio id="audioPlayer" controls hidden></audio>
-<center><h2 class="light-txt">Private Speakers</h2></center>
+@* <center><h2 class="light-txt">Private Speakers</h2></center> *@
 <div class="container-row">
     <div class="player-container">
         <div class="status-window">
@@ -42,11 +42,11 @@
             </div>
         </div>
         <div class="player-controls">
-            <button id="previous" class="btn btn-primary">Previous</button>
-            <button id="play" class="btn btn-primary">Play</button>
-            <button id="pause" class="btn btn-primary">Pause</button>
-            <button id="stop" class="btn btn-primary">Stop</button>
-            <button id="next" class="btn btn-primary">Next</button>
+            <button id="previous" class="btn btn-player next-previous"><img class="player-icon" src="~/img/previous.png" /></button>
+            <button id="play" class="btn btn-player play"><img class="player-icon" src="~/img/play.png"/></button>
+            <button id="pause" class="btn btn-player pause"><img class="player-icon" src="~/img/pause.png" /></button>
+            <button id="stop" class="btn btn-player stop"><img class="player-icon" src="~/img/stop.png" /></button>
+            <button id="next" class="btn btn-player next-previous"><img class="player-icon" src="~/img/next.png" /></button>
         </div>
         <!-- Search Input Box -->
         <div class="search-container">

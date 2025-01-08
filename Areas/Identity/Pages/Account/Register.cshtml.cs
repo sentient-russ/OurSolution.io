@@ -85,11 +85,13 @@ namespace os.Areas.Identity.Pages.Account
             [Display(Name = "First Name")]
             public string? FirstName { get; set; } = "";
 
-            //[StringLength(100, ErrorMessage = "The {0} must be at least {1} and at max {100} characters long.", MinimumLength = 2)]
+            [StringLength(100, MinimumLength = 1)]
+            [Required]
             [Display(Name = "Last Name")]
             public string? LastName { get; set; } = "";
 
             //[StringLength(100, ErrorMessage = "The phone number must be 9 digets long.", MinimumLength = 11)]
+            [Required]
             [Display(Name = "Phone Number")]
             public string? PhoneNumber { get; set; } = "";
 
@@ -141,6 +143,8 @@ namespace os.Areas.Identity.Pages.Account
                 user.Zip = Input.Zip;
                 user.BellyButtonBirthday = Input.BellyButtonBirthday;
                 user.AABirthday = Input.AABirthday;
+                user.NormalizedEmail = Input.Email.ToUpper().Trim();
+                user.NormalizedUserName = Input.Email.ToUpper().Trim();
                 await _userStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
                 await _emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);
                 var result = await _userManager.CreateAsync(user, Input.Password);

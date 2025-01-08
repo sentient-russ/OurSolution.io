@@ -52,13 +52,13 @@
                     <td>
                         @Html.DisplayFor(modelItem => item.Email)
                     </td>
-                    <td>
+                    <td class="text-center">
                         @Html.DisplayFor(modelItem => item.PhoneNumber)
                     </td>
-                    <td>
+                    <td class="text-center">
                         @Html.DisplayFor(modelItem => item.UserRole)
                     </td>
-                    <td>
+                    <td class="text-center">
                         @Html.DisplayFor(modelItem => item.ActiveStatus)
                     </td>
                     <td>
@@ -92,4 +92,54 @@
             }
         }
     });
+
+</script>
+<script>
+    function toggleColumns() {
+        const headers = document.querySelectorAll('thead th');
+        const rows = document.querySelectorAll('tbody tr');
+        const columnsToRemove = [1, 3, 4, 5]; 
+
+        if (window.innerWidth < 800) {
+            // Hide columns on small screens
+            headers.forEach((header, index) => {
+                if (columnsToRemove.includes(index)) {
+                    header.style.display = 'none';
+                }
+            });
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                cells.forEach((cell, index) => {
+                    if (columnsToRemove.includes(index)) {
+                        cell.style.display = 'none'; 
+                    }
+                });
+            });
+        } else {
+            // Show columns on larger screens
+            headers.forEach((header, index) => {
+                if (columnsToRemove.includes(index)) {
+                    header.style.display = ''; 
+                }
+            });
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                cells.forEach((cell, index) => {
+                    if (columnsToRemove.includes(index)) {
+                        cell.style.display = ''; 
+                    }
+                });
+            });
+        }
+    }
+    function debounce(func, wait) {
+        let timeout;
+        return function (...args) {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(this, args), wait);
+        };
+    }
+    const debouncedToggleColumns = debounce(toggleColumns, 100);
+    window.addEventListener('load', debouncedToggleColumns);
+    window.addEventListener('resize', debouncedToggleColumns);
 </script>

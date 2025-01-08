@@ -3,15 +3,16 @@
 @{
     ViewData["Title"] = "Register";
 }
-<div class="intro-message light-txt text-center">
-    Currently registration is only open to varified members of the Living in the Solution Group of Atlanta Ga.
+<div class="intro-message light-txt message-txt">
+    <p>If you would like to access our speaker collection, our literature chair will be happy to provide an access password at one of our weekly meetings.</p>
+    <p>Registration is only open to verified group members that will be serving as a site administrator.</p>
 </div>
 <div class="login-container-row">
     <div class="login-container-column">
         <section>
             <form id="registerForm" asp-route-returnUrl="@Model.ReturnUrl" method="post">
-                <div class="login-logo light-txt">
-                    <img style="max-width:150px;" class="ai-logo" src="~/img/gcai_logo_light.png" />
+                <div class="login-logo">
+                    <img style="max-width:100px;" class="ai-logo" src="~/img/gcai_logo_light.png" />
                     <center>@ViewData["Title"]</center>
                 </div>
                 <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
@@ -32,7 +33,7 @@
                 </div>
                 <div class="form-floating mb-3">
                     <input asp-for="Input.PhoneNumber" class="form-control" autocomplete="tel-national" aria-required="true" placeholder="000-000-0000" id="Phone"/>
-                    <label asp-for="Input.PhoneNumber">Phone Number (Not Required)</label>
+                    <label asp-for="Input.PhoneNumber">Phone Number (Required)</label>
                     <span asp-validation-for="Input.PhoneNumber" class="text-danger"></span>
                 </div>
                 <div class="form-floating mb-3">
@@ -55,7 +56,7 @@
                     <label asp-for="Input.ConfirmPassword">Confirm Password (Required)</label>
                     <span asp-validation-for="Input.ConfirmPassword" class="text-danger"></span>
                 </div>
-                <button id="registerSubmit" type="submit" class="login-button">Register</button>
+                <button id="registerSubmit" type="submit" class="login-button btn-primary">Register</button>
                 <div class="login-links">
                     <p>
                         <a asp-page="./Login" asp-route-returnUrl="@Model.ReturnUrl">Go to Login</a>

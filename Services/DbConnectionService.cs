@@ -330,7 +330,7 @@ namespace os.Services
                 using var conn1 = new MySqlConnection(Environment.GetEnvironmentVariable("DbConnectionString"));
                 string command = "UPDATE os.Users SET FirstName = @FirstName, LastName = @LastName, PhoneNumber = @PhoneNumber, " +
                     "BellyButtonBirthday = @BellyButtonBirthday, AABirthday = @AABirthday, Address = @Address, City = @City, State = @State, Zip = @Zip," +
-                    " UserRole = @UserRole, ActiveStatus = @ActiveStatus, ProfileImage = @ProfileImage " +
+                    " UserRole = @UserRole, ActiveStatus = @ActiveStatus, ProfileImage = @ProfileImage, EmailConfirmed = @EmailConfirmed" +
                     " WHERE Id LIKE @Id";
                 conn1.Open();
                 MySqlCommand cmd1 = new MySqlCommand(command, conn1);
@@ -349,6 +349,10 @@ namespace os.Services
                 AssignUserRole(userIn.Id, userIn.UserRole);
                 cmd1.Parameters.AddWithValue("@UserRole", userIn.UserRole);
                 cmd1.Parameters.AddWithValue("@ActiveStatus", userIn.ActiveStatus);
+                if(userIn.ActiveStatus == "Active")
+                {
+                    cmd1.Parameters.AddWithValue("EmailConfirmed", 1);
+                }
                 cmd1.Parameters.AddWithValue("@ProfileImage", userIn.ProfileImage);
                 MySqlDataReader reader1 = cmd1.ExecuteReader();
                 reader1.Close();

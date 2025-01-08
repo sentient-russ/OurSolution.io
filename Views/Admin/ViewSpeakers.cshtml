@@ -18,7 +18,7 @@
         <thead>
             <tr>
                 <th class="la pl20">
-                    @Html.DisplayNameFor(model => model.FirstName)
+                    Speaker First Name:
                 </th>
                 <th class="la">
                     @Html.DisplayNameFor(model => model.LastName)
@@ -54,16 +54,16 @@
                     <td class="la">
                         @Html.DisplayFor(modelItem => item.Description)
                     </td>
-                    <td>
+                    <td class="text-center">
                         @(item.UploadDate?.ToString("MM/dd/yyyy"))
                     </td>
                     <td>
                         @Html.DisplayFor(modelItem => item.UploadedBy)
                     </td>
-                    <td>
+                    <td class="text-center">
                         @Html.DisplayFor(modelItem => item.SpeakerStatus)
                     </td>
-                    <td>
+                    <td class="text-center">
                         @Html.DisplayFor(modelItem => item.Visibility)
                     </td>
                     <td>
@@ -95,4 +95,53 @@
             }
         }
     });
+</script>
+<script>
+    function toggleColumns() {
+        const headers = document.querySelectorAll('thead th');
+        const rows = document.querySelectorAll('tbody tr');
+        const columnsToRemove = [2,3,4,6,];
+
+        if (window.innerWidth < 800) {
+            // Hide columns on small screens
+            headers.forEach((header, index) => {
+                if (columnsToRemove.includes(index)) {
+                    header.style.display = 'none';
+                }
+            });
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                cells.forEach((cell, index) => {
+                    if (columnsToRemove.includes(index)) {
+                        cell.style.display = 'none';
+                    }
+                });
+            });
+        } else {
+            // Show columns on larger screens
+            headers.forEach((header, index) => {
+                if (columnsToRemove.includes(index)) {
+                    header.style.display = '';
+                }
+            });
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                cells.forEach((cell, index) => {
+                    if (columnsToRemove.includes(index)) {
+                        cell.style.display = '';
+                    }
+                });
+            });
+        }
+    }
+    function debounce(func, wait) {
+        let timeout;
+        return function (...args) {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(this, args), wait);
+        };
+    }
+    const debouncedToggleColumns = debounce(toggleColumns, 100);
+    window.addEventListener('load', debouncedToggleColumns);
+    window.addEventListener('resize', debouncedToggleColumns);
 </script>

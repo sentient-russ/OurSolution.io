@@ -3,12 +3,12 @@
     var hasExternalLogins = (await SignInManager.GetExternalAuthenticationSchemesAsync()).Any();
 }
 
-<div class="account-management-col"><a class=" @ManageNavPages.IndexNavClass(ViewContext)" id="profile" asp-page="./Index" style="text-decoration:none;">Profile</a></div>
-<div class="account-management-col"><a class=" @ManageNavPages.EmailNavClass(ViewContext)" id="email" asp-page="./Email" style="text-decoration:none;">Email</a></div>
-<div class="account-management-col"><a class=" @ManageNavPages.ChangePasswordNavClass(ViewContext)" id="change-password" asp-page="./ChangePassword" style="text-decoration:none;">Password</a></div>
+<div class="account-management-col"><a class="management-btn @ManageNavPages.IndexNavClass(ViewContext)" id="profile" asp-page="./Index" style="text-decoration:none;">Profile</a></div>
+<div class="account-management-col"><a class="management-btn @ManageNavPages.EmailNavClass(ViewContext)" id="email" asp-page="./Email" style="text-decoration:none;">Email</a></div>
+<div class="account-management-col"><a class="management-btn @ManageNavPages.ChangePasswordNavClass(ViewContext)" id="change-password" asp-page="./ChangePassword" style="text-decoration:none;">Password</a></div>
     @if (hasExternalLogins)
     {
     <div id="external-logins" class="account-management-col"><a id="external-login" class=" @ManageNavPages.ExternalLoginsNavClass(ViewContext)" asp-page="./ExternalLogins" style="text-decoration:none;">External logins</a></div>
     }
-<div class="account-management-col"><a class=" @ManageNavPages.PersonalDataNavClass(ViewContext)" id="personal-data" asp-page="./PersonalData" style="text-decoration:none;">Personal data</a></div>
+<div class="account-management-col"><a class="management-btn @ManageNavPages.PersonalDataNavClass(ViewContext)" id="personal-data" asp-page="./PersonalData" style="text-decoration:none;">Personal data</a></div>
 
