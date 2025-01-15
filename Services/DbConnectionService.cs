@@ -330,7 +330,7 @@ namespace os.Services
                 using var conn1 = new MySqlConnection(Environment.GetEnvironmentVariable("DbConnectionString"));
                 string command = "UPDATE os.Users SET FirstName = @FirstName, LastName = @LastName, PhoneNumber = @PhoneNumber, " +
                     "BellyButtonBirthday = @BellyButtonBirthday, AABirthday = @AABirthday, Address = @Address, City = @City, State = @State, Zip = @Zip," +
-                    " UserRole = @UserRole, ActiveStatus = @ActiveStatus, ProfileImage = @ProfileImage, EmailConfirmed = @EmailConfirmed" +
+                    " UserRole = @UserRole, ActiveStatus = @ActiveStatus, ProfileImage = @ProfileImage, EmailConfirmed = @EmailConfirmed, NormalizedEmail = @NormalizedEmail" +
                     " WHERE Id LIKE @Id";
                 conn1.Open();
                 MySqlCommand cmd1 = new MySqlCommand(command, conn1);
@@ -347,13 +347,23 @@ namespace os.Services
                 //ensure no duplicate roles are assigned to a user
                 DeleteUserRole(userIn.Id);
                 AssignUserRole(userIn.Id, userIn.UserRole);
-                cmd1.Parameters.AddWithValue("@UserRole", userIn.UserRole);
-                cmd1.Parameters.AddWithValue("@ActiveStatus", userIn.ActiveStatus);
+                // ensure admin account remains intact
+                if(userIn.Email == "admin@magnadigi.com") {
+                    cmd1.Parameters.AddWithValue("@ActiveStatus", "Active");
+                    cmd1.Parameters.AddWithValue("@UserRole", "Administrator");
+                } else if (userIn.Email == "cs@magnadigi.com") {
+                    cmd1.Parameters.AddWithValue("@ActiveStatus", "Active");
+                    cmd1.Parameters.AddWithValue("@UserRole", "Member");
+                } else {
+                    cmd1.Parameters.AddWithValue("@UserRole", userIn.UserRole);
+                    cmd1.Parameters.AddWithValue("@ActiveStatus", userIn.ActiveStatus);
+                }
                 if(userIn.ActiveStatus == "Active")
                 {
                     cmd1.Parameters.AddWithValue("EmailConfirmed", 1);
                 }
                 cmd1.Parameters.AddWithValue("@ProfileImage", userIn.ProfileImage);
+                cmd1.Parameters.AddWithValue("@NormalizedEmail", userIn.Email.ToUpper()); // required for password resetes
                 MySqlDataReader reader1 = cmd1.ExecuteReader();
                 reader1.Close();
                 conn1.Close();
@@ -593,7 +603,7 @@ namespace os.Services
                 string command = "SELECT * FROM os.Users WHERE Email = @Email;";
                 conn1.Open();
                 MySqlCommand cmd1 = new MySqlCommand(command, conn1);
-                cmd1.Parameters.AddWithValue("@Email", emailIn);
+                cmd1.Parameters.AddWithValue("@Email", emailIn.ToLower());
                 MySqlDataReader reader1 = cmd1.ExecuteReader();
                 while (reader1.Read())
                 {

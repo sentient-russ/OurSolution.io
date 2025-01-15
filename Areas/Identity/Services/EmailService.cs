@@ -9,9 +9,9 @@ using System.Diagnostics;
 namespace os.Areas.Identity.Services;
 public class EmailService : IEmailSender
 {
-    private string emailPass;
-    private string emailServer;
-    private string emailAddress;
+    private string? emailPass;
+    private string? emailServer;
+    private string? emailAddress;
 
     public EmailService(IConfiguration configuration)
     {
@@ -25,8 +25,7 @@ public class EmailService : IEmailSender
         await Execute(subject, message, toEmail);
     }
     public async Task Execute(string subject, string message, string toEmail)
-    {
-        Debug.WriteLine($"Email sent to: {toEmail}, Subject: {subject}, Body: {message}");
+    { 
         var email = new MimeMessage();
         email.From.Add(MailboxAddress.Parse(emailAddress));
         email.To.Add(MailboxAddress.Parse(toEmail));
@@ -39,10 +38,7 @@ public class EmailService : IEmailSender
         smtp.Connect(emailServer, 465, SecureSocketOptions.Auto);
         smtp.Authenticate(emailAddress, emailPass);
         var response = smtp.Send(email);
-        
-        
-        Debug.WriteLine("The email server response was: ");
-        Debug.WriteLine(response);
+        Debug.WriteLine($"Email sent to: {toEmail}, Subject: {subject}, Body: {message}");
         smtp.Disconnect(true);
     }
 }

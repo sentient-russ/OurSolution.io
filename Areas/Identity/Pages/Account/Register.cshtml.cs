@@ -133,7 +133,7 @@ namespace os.Areas.Identity.Pages.Account
             if (ModelState.IsValid)
             {
                 var user = CreateUser();
-                user.Email = Input.Email;
+                user.Email = Input.Email.ToLower().Trim();
                 user.FirstName = Input.FirstName;
                 user.LastName = Input.LastName;
                 user.PhoneNumber = Input.PhoneNumber;

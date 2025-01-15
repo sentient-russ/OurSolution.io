@@ -105,8 +105,11 @@ a {
         opacity: .01;
     }
     disabled{
-        opacity: .01 !important;
+        opacity: .5 !important;
     }
+.disabled {
+    opacity: .65 !important;
+}
 .btn-outline-secondary {
     border-color: #6c757d;
     font-weight: 501;

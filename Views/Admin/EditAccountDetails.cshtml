@@ -65,17 +65,41 @@
             </div>
             <div class="form-group">
                 <label asp-for="UserRole" class="control-label cust-label"></label>
-                <select asp-for="UserRole" asp-items=@Model.RoleList class="form-drop-down form-select" aria-required="true">
-                    <option default hidden disabled selected>Select Role</option>
-                </select>
+                @if (Model.Email == "admin@magnadigi.com")
+                {
+                    <select asp-for="UserRole" class="form-drop-down form-select disabled" aria-required="true">
+                        <option default id="Active">Administrator</option>
+                    </select>
+                }
+                else if (Model.Email == "cs@magnadigi.com")
+                {
+                    <select asp-for="UserRole" class="form-drop-down form-select disabled" aria-required="true">
+                        <option default id="Active">Member</option>
+                    </select>
+                } else
+                {
+                    <select asp-for="UserRole" asp-items=@Model.RoleList class="form-drop-down form-select" aria-required="true">
+                        <option default hidden disabled selected>Select Role</option>
+                    </select>
+                }
+
                 <span asp-validation-for="UserRole" class="text-danger"></span>
             </div>
             <div class="form-group">
                 <label asp-for="ActiveStatus" class="control-label cust-label"></label>
-                <select asp-for="ActiveStatus" class="form-drop-down form-select" aria-required="true">
-                    <option default id="Active">Active</option>
-                    <option default id="Disabled">Disabled</option>
-                </select>
+                @if (Model.Email == "admin@magnadigi.com" || Model.Email == "cs@magnadigi.com")
+                {
+                    <select asp-for="ActiveStatus" class="form-drop-down form-select disabled" aria-required="true">
+                        <option default id="Active">Active</option>
+                    </select>
+                } else
+                {
+                    <select asp-for="ActiveStatus" class="form-drop-down form-select" aria-required="true">
+                        <option default id="Active">Active</option>
+                        <option default id="Disabled">Disabled</option>
+                    </select>
+                }
+
                 <span asp-validation-for="ActiveStatus" class="text-danger"></span>
             </div>
             <div class="form-group">

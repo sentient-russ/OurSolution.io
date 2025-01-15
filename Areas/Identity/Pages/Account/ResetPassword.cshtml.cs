@@ -11,17 +11,22 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.WebUtilities;
+using Org.BouncyCastle.Tls;
 using os.Areas.Identity.Data;
+using os.Services;
+using ZstdSharp.Unsafe;
 
 namespace os.Areas.Identity.Pages.Account
 {
     public class ResetPasswordModel : PageModel
     {
         private readonly UserManager<AppUser> _userManager;
+        private readonly DbConnectionService _dbService;
 
-        public ResetPasswordModel(UserManager<AppUser> userManager)
+        public ResetPasswordModel(UserManager<AppUser> userManager, DbConnectionService dbService)
         {
             _userManager = userManager;
+            _dbService = dbService;
         }
 
         /// <summary>
@@ -101,11 +106,23 @@ namespace os.Areas.Identity.Pages.Account
                 // Don't reveal that the user does not exist
                 return RedirectToPage("./ResetPasswordConfirmation");
             }
+            user.NormalizedEmail = user.NormalizedUserName;
 
             var result = await _userManager.ResetPasswordAsync(user, Input.Code, Input.Password);
             if (result.Succeeded)
             {
-                return RedirectToPage("./ResetPasswordConfirmation");
+                //patch fix for normalized username being stripped durring password reset.
+                AppUser appUser = _dbService.GetUserDetailsByEmail(Input.Email.ToLower());
+                bool userUpdated = await _dbService.UpdateUserDetailsAsync(appUser);
+                if (userUpdated)
+                {
+                    return RedirectToPage("./ResetPasswordConfirmation");
+                }
+                else
+                {
+                    ModelState.AddModelError(string.Empty, "Error updating user details for NormalizedEmail.");
+                }
+                
             }
 
             foreach (var error in result.Errors)

@@ -52,6 +52,8 @@ if (builder.Configuration["ASPNETCORE_ENVIRONMENT"] == "Production")
 {
     connectionString = Environment.GetEnvironmentVariable("OS_Local");
     emailPass = Environment.GetEnvironmentVariable("OS_Email_Pass");
+    emailAddress = Environment.GetEnvironmentVariable("OS_Email_Address");
+    emailServer = Environment.GetEnvironmentVariable("OS_Email_Server");
     if (connectionString == "")
     {
         throw new Exception("ProgramCS: The connection string was null!");
@@ -74,9 +76,9 @@ else
     emailAddress = builder.Configuration["OS_Email_Address"];
     emailServer = builder.Configuration["OS_Email_Server"];
 
-    Environment.SetEnvironmentVariable("OS_Email_Pass", emailPass); // This is used in services to access the string
-    Environment.SetEnvironmentVariable("OS_Email_Address", emailAddress); // This is used in services to access the string
-    Environment.SetEnvironmentVariable("OS_Email_Server", emailServer); // This is used in services to access the string
+    Environment.SetEnvironmentVariable("OS_Email_Pass", emailPass);
+    Environment.SetEnvironmentVariable("OS_Email_Address", emailAddress); 
+    Environment.SetEnvironmentVariable("OS_Email_Server", emailServer); 
 
     // DB context which allows migrations but does not auto retry with MySQL
     builder.Services.AddDbContext<ApplicationDbContext>(
@@ -87,7 +89,7 @@ else
         .EnableDetailedErrors()
     );
 }
-Environment.SetEnvironmentVariable("DbConnectionString", connectionString); // This is used in services to access the string
+Environment.SetEnvironmentVariable("DbConnectionString", connectionString); 
 
 
 builder.Services.AddDefaultIdentity<AppUser>(options => options.SignIn.RequireConfirmedAccount = true)
@@ -113,7 +115,7 @@ builder.Services.AddDataProtection().UseCryptographicAlgorithms(
         ValidationAlgorithm = ValidationAlgorithm.HMACSHA256
     });
 
-builder.Services.AddSingleton<DbConnectionService>(); // Cannot be a singleton because it will miss the conn str
+builder.Services.AddScoped<DbConnectionService>();
 builder.Services.AddTransient<IEmailSender, EmailService>();
 builder.Services.AddAuthorization();
 builder.Services.AddHttpClient();
@@ -136,7 +138,6 @@ builder.Services.AddMvc();
 });
 */
 
-
 /*builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
@@ -151,7 +152,6 @@ builder.Services.AddMvc();
         options.AccessDeniedPath = "/Account/AccessDenied"; // Redirect to this path if access is denied
     });
 */
-
 
 var app = builder.Build();
 
