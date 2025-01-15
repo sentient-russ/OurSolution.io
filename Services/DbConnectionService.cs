@@ -347,11 +347,11 @@ namespace os.Services
                 //ensure no duplicate roles are assigned to a user
                 DeleteUserRole(userIn.Id);
                 AssignUserRole(userIn.Id, userIn.UserRole);
-                // ensure admin account remains intact
-                if(userIn.Email == "admin@magnadigi.com") {
+                // ensure admin and shared accounts remain intact
+                if(userIn.Email == "admin@oursolution.io") {
                     cmd1.Parameters.AddWithValue("@ActiveStatus", "Active");
                     cmd1.Parameters.AddWithValue("@UserRole", "Administrator");
-                } else if (userIn.Email == "cs@magnadigi.com") {
+                } else if (userIn.Email == "shareduser@oursolution.io") {
                     cmd1.Parameters.AddWithValue("@ActiveStatus", "Active");
                     cmd1.Parameters.AddWithValue("@UserRole", "Member");
                 } else {

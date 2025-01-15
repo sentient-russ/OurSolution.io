@@ -1,4 +1,5 @@
-﻿using MailKit.Security;
+﻿#nullable disable
+using MailKit.Security;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.Extensions.Options;
 using MimeKit;
@@ -8,16 +9,19 @@ using System.Diagnostics;
 
 namespace os.Areas.Identity.Services;
 public class EmailService : IEmailSender
-{
-    private string? emailPass;
+{    
     private string? emailServer;
+    private int emailPort;
     private string? emailAddress;
+    private string? emailPass;
 
     public EmailService(IConfiguration configuration)
     {
+        emailServer = Environment.GetEnvironmentVariable("OS_Email_Server");
+        emailPort = int.Parse(Environment.GetEnvironmentVariable("OS_Email_Port"));        
         emailPass = Environment.GetEnvironmentVariable("OS_Email_Pass");
         emailAddress = Environment.GetEnvironmentVariable("OS_Email_Address");
-        emailServer = Environment.GetEnvironmentVariable("OS_Email_Server");
+        
     }
 
     public async Task SendEmailAsync(string toEmail, string subject, string message)
@@ -34,8 +38,9 @@ public class EmailService : IEmailSender
         {
             Text = message
         };
+
         using var smtp = new SmtpClient();
-        smtp.Connect(emailServer, 465, SecureSocketOptions.Auto);
+        smtp.Connect(emailServer, emailPort, SecureSocketOptions.StartTls);
         smtp.Authenticate(emailAddress, emailPass);
         var response = smtp.Send(email);
         Debug.WriteLine($"Email sent to: {toEmail}, Subject: {subject}, Body: {message}");

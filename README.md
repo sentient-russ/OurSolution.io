@@ -4,7 +4,7 @@
 <p>OurSolution.io was created for the Living in the Solution Group of Atlanta GA.  The online application provides a secure media player for the groups private speaker collection. Please be aware that this is a fully functioning prototype awaiting stakeholder sign-off.</p>
 
 > [!NOTE]
-> #### **Demo Account:** Due to the private nature of the systems content, demo credentials will only be provided on a case by case basis. You may contact russell@magnadigi.com for details.
+> #### **Demo Account:** Due to the private nature of the systems content, demo credentials will only be provided on a case by case basis. You may contact russell@oursolution.io for details.
 
 ### Demo Screens:
 <p align="center">

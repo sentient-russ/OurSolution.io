@@ -40,12 +40,12 @@ namespace os.Areas.Identity.Pages.Account
                 var user = await _userManager.FindByEmailAsync(Input.Email.Trim());
 
 
-                // prevent the admin account password from being able to be reset.
-                if (user.Email == "admin@magnadigi.com")
+/*                // prevent the admin account password from being able to be reset.
+                if (user.Email == "admin@oursolution.io")
                 {
                     return RedirectToPage("./ForgotPasswordAdminAccount");
                 }
-
+*/
                 if (user == null || !(await _userManager.IsEmailConfirmedAsync(user)))
                 {
                     // Don't reveal that the user does not exist or is not confirmed

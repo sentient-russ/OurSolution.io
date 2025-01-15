@@ -47,6 +47,7 @@ var connectionString = "";
 var emailPass = "";
 var emailAddress = "";
 var emailServer = "";
+var emailPort = "";
 var serverVersion = new MySqlServerVersion(new Version(8, 8, 39));
 if (builder.Configuration["ASPNETCORE_ENVIRONMENT"] == "Production")
 {
@@ -54,6 +55,7 @@ if (builder.Configuration["ASPNETCORE_ENVIRONMENT"] == "Production")
     emailPass = Environment.GetEnvironmentVariable("OS_Email_Pass");
     emailAddress = Environment.GetEnvironmentVariable("OS_Email_Address");
     emailServer = Environment.GetEnvironmentVariable("OS_Email_Server");
+    emailPort = Environment.GetEnvironmentVariable("OS_Email_Port");
     if (connectionString == "")
     {
         throw new Exception("ProgramCS: The connection string was null!");
@@ -75,10 +77,12 @@ else
     emailPass = builder.Configuration["OS_Email_Pass"];
     emailAddress = builder.Configuration["OS_Email_Address"];
     emailServer = builder.Configuration["OS_Email_Server"];
+    emailPort = builder.Configuration["OS_Email_Port"];
 
     Environment.SetEnvironmentVariable("OS_Email_Pass", emailPass);
     Environment.SetEnvironmentVariable("OS_Email_Address", emailAddress); 
     Environment.SetEnvironmentVariable("OS_Email_Server", emailServer); 
+    Environment.SetEnvironmentVariable("OS_Email_Port", emailPort); 
 
     // DB context which allows migrations but does not auto retry with MySQL
     builder.Services.AddDbContext<ApplicationDbContext>(
