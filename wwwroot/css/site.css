@@ -9,10 +9,9 @@
     --persian-indigo: ##320D6D;
     --powder-blue: #BFDBF7;
     --cosmic-latte: #F9F5E3;
-    --play-green: #4D8B31;
+    --play-green: #4D8B31F0;
     --next-previous: #2E86AB;
-
-    --stop-red: #A81121;
+    --stop-red: #A81121D6;
     --rich-black: #101419;
     --electric-blue: #3E78B2;
 }
@@ -75,7 +74,9 @@ a {
     height: 50px;
     font-weight: 300;
     font-size: 16px;
-    margin-left: -2.5px;
+    padding: 2.5px;
+    margin-left: 2.5px;
+    margin-right:2.5px;
 }
 .btn-primary {
     backdrop-filter: blur(5px) saturate(118%);
@@ -556,16 +557,16 @@ input:-webkit-autofill:focus {
 .player-id-column {
     display: flex;
     flex-direction: column;
-    min-width: 50px;
-    text-align:center;
+    min-width: 25px;
+    text-align:left;
     margin-left: 10px;
 }
 .player-speaker-column {
     display: flex;
     flex-direction: column;
-    width: 220px;
+    min-width: 75px;
     text-align: left;
-    padding-left: 25px;
+    margin-left: 25px;
 }
 .player-uploaded-column {
     display: flex;
@@ -602,13 +603,12 @@ input:-webkit-autofill:focus {
     width: 250px;
     padding-left: 25px;
 }
-.speaker-talkdate-column {
+.player-description-column {
     display: flex;
     flex: 1;
-    text-align: center;
-    padding-right: 0px;
-    justify-content: right;
-    margin-right: 10px;
+    text-align: left;
+    margin-left: 25px;
+    justify-content: left;
 }
 
 .even-line {

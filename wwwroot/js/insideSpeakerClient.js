@@ -31,7 +31,7 @@
         currentFileIndex = index;
         const speaker = files[currentFileIndex];
         audioPlayer.src = `/api/media/stream/${encodeURIComponent(speaker.displayFileName)}`;
-        console.log('Setting audio source:', audioPlayer.src); // Debugging
+        console.log('Setting audio source:', audioPlayer.src); 
         const lastInitial = speaker.lastName ? speaker.lastName.charAt(0).toUpperCase() : '';
         const speakerName = `${speaker.firstName} ${lastInitial}`;
         updateStatus('Stopped', speakerName);
@@ -49,20 +49,20 @@
 
             const speakerIdDiv = document.createElement('div');
             speakerIdDiv.textContent = speaker.speakerId;
-            speakerIdDiv.classList.add('speaker-id-column');
+            speakerIdDiv.classList.add('player-id-column');
             speakerRow.appendChild(speakerIdDiv);
 
             const displayNameDiv = document.createElement('div');
             const lastInitial = speaker.lastName ? speaker.lastName.charAt(0).toUpperCase() : '';
             const speakerName = `${speaker.firstName} ${lastInitial}`;
             displayNameDiv.textContent = speakerName;
-            displayNameDiv.classList.add('speaker-name-column');
+            displayNameDiv.classList.add('player-speaker-column');
             speakerRow.appendChild(displayNameDiv);
 
-            const dateRecordedDiv = document.createElement('div');
-            dateRecordedDiv.textContent = new Date(speaker.dateRecorded).toLocaleDateString();
-            dateRecordedDiv.classList.add('speaker-talkdate-column');
-            speakerRow.appendChild(dateRecordedDiv);
+            const descriptionDiv = document.createElement('div');
+            descriptionDiv.textContent = speaker.description; // Directly use the description field
+            descriptionDiv.classList.add('player-description-column');
+            speakerRow.appendChild(descriptionDiv);
 
             speakerRow.addEventListener('click', () => playFile(index));
             speakerRow.classList.add(index % 2 === 0 ? 'even-line' : 'odd-line');
@@ -171,9 +171,10 @@
         const searchTerm = searchInput.value.toLowerCase();
         const fileItems = document.querySelectorAll('.speaker-row');
         fileItems.forEach((fileItem) => {
-            const speakerIdColumn = fileItem.querySelector('.speaker-id-column');
-            const displayNameColumn = fileItem.querySelector('.speaker-name-column');
-            const rowText = `${speakerIdColumn.textContent} ${displayNameColumn.textContent}`.toLowerCase();
+            const speakerIdColumn = fileItem.querySelector('.player-id-column');
+            const displayNameColumn = fileItem.querySelector('.player-speaker-column');
+            const descriptionColumn = fileItem.querySelector('.player-description-column');
+            const rowText = `${speakerIdColumn.textContent} ${displayNameColumn.textContent} ${descriptionColumn.textContent}`.toLowerCase() ;
             fileItem.style.display = rowText.includes(searchTerm) ? 'flex' : 'none';
         });
     }

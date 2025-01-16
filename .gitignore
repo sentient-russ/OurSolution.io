@@ -483,5 +483,8 @@ $RECYCLE.BIN/
 # Vim temporary swap files
 *.swp
 
+# site javascript
 site.js
 
+# file uploads folder container speakers
+/wwwroot/uploads/
