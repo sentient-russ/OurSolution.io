@@ -10,10 +10,13 @@
     </div>
 }
 
+<div class="logo-container">
+    <center><span class="presentedby-txt">The Living in the Solution Group.</span></center>
+    <center><span class="presentedby-txt">Atlanta, Ga.</span></center>
+</div>
 <div class="intro-message light-txt">
     <p class="message-txt">A member-to-member shared password is required to access speaker recordings.</p>
 </div>
-
 <div class="container-column">
     <div class="login-container-row">
         <div class="login-container-column">
@@ -41,57 +44,57 @@
             </section>
         </div>
     </div>
-    <div class="logo-container">
-        @* <img src="~/img/logo_large.png" class="logo-large" /> *@
-        <span class="presentedby-txt">Presented by: The Living in the Solution Group. Atl. GA</span>
+
+    <div class="light-txt margin-top-20">
+        <span class="heading-links">Meeting Locations</span><br>
+        <div class="location-text hidden" id="location_text">           
+            Men who have a desire to stop drinking are welcome to join us.</br>
+            <div class="meeting-card-container">
+                <div class="meeting-card">
+                    <div>
+                        <span class="meeting-name">Living in the Solution</span><br>
+                        Saturday 9:00 AM – 10:00 AM EDT<br>
+                    </div>
+                    <a href="https://maps.app.goo.gl/TzY8UoXo7Hhga9e37" target="_blank">
+                        Saint Luke's Lutheran Church<br>
+                        3264 Northside Pkwy NW<br>
+                        Atlanta, GA 30327<br>
+                    </a>
+                </div>            
+            </div>
+            <div class="meeting-card-container">
+                <div class="meeting-card">
+                    <div>
+                        <span class="meeting-name">Living in the Solution North</span><br>
+                        Wednesday 7:00 PM – 8:00 PM EDT<br>
+                    </div>
+                    <div class="">
+                        <a href="https://maps.app.goo.gl/DxqguX3fGuGfLPdS7" target="_blank">
+                            Roswell United Methodist Church<br>
+                            814 Mimosa Blvd<br> 
+                            Roswell, GA 30075<br>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-@*     <div class="player-container">
-        <div class="status-window">
-            <!-- Status Message Row -->
-            <div class="status-message-row">
-                <span class="status-label">Status: </span><span class="status-message" id="status-message">Stopped</span>
-            </div>
-            <!-- Speaker Name Row -->
-            <div class="speaker-name-row">
-                <span class="status-label">Speaker: </span><span class="speaker-name" id="speaker-name"></span>
-            </div>
-            <!-- Play Status Bar -->
-            <div class="play-status-bar" id="play-status-bar">
-                <div class="play-status-progress" id="play-status-progress"></div>
-                <div class="play-status-handle" id="play-status-handle"></div>
-            </div>
-            <div class="time-display">
-                <span id="current-time">00:00</span> / <span id="total-duration">00:00</span>
+    <div class="light-txt">
+        <span class="heading-links">Helpful Links</span><br>
+        <div class="meeting-card-container">            
+             <div class=" " >
+                <div class="helpful-links-text helpful-links-card hidden" id="helpful_links_text">
+                    <a href="https://www.aa.org/aa-gso">AA General Service Office</a></br>
+                    <a href="https://atlantaaa.org/">Atlanta Central Office</a> / <a href="https://atlantaaa.org/meetings/">Atlanta Area Meetings</a></br>
+                    <a href="https://play.google.com/store/apps/details?id=com.bigbook3&hl=en_US">Everything AA App</a></br>
+                    <a href="https://www.recoveryspeakers.com/">RecoverySpeakers.com</a></br>
+                </div>
             </div>
         </div>
-        <div class="player-controls">
-            <button id="previous" class="btn btn-primary">Previous</button>
-            <button id="play" class="btn btn-primary">Play</button>
-            <button id="pause" class="btn btn-primary">Pause</button>
-            <button id="stop" class="btn btn-primary">Stop</button>
-            <button id="next" class="btn btn-primary">Next</button>
-        </div>
-        <!-- Search Input Box -->
-        <div class="search-container">
-            <input type="text" id="searchInput" placeholder="Filter by No. or Speaker..." class="search-input">
-            <img src="~/img/search.svg" class="search-img" />
-        </div>
-        <div class="player-headings light-txt">
-            <div class="player-id-column">
-                <span class="player-heading-txt">Num.</span>
-            </div>
-            <div class="player-speaker-column">
-                <span class="player-heading-txt">Speaker</span>
-            </div>
-            <div class="player-talkdate-column">
-                <span class="player-heading-txt">Talk Date</span>
-            </div>
-        </div>
-        <div class="speaker-container">
-            <div class="file-list-container" id="fileList">
-                <!-- File list will be populated here -->
-            </div>
-        </div>
-    </div> *@
+    </div>
 </div>
- @* <script src="~/js/speakerClient.js"></script> *@
+
+@section Scripts {
+    <partial name="_GoogleAnalytics" />
+    <script src="~/js/fadeIn.js"></script>
+}

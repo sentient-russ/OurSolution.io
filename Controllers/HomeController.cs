@@ -23,6 +23,30 @@ namespace os.Controllers
             return View();
         }
 
+        [HttpGet]
+        public IActionResult Meetings()
+        {
+            return View();
+        }
+
+        [HttpGet]
+        public IActionResult GeneralServiceOffice()
+        {
+            return View();
+        }
+
+        [HttpGet]
+        public IActionResult AtlantaMeetingSchedule()
+        {
+            return View();
+        }
+
+        [HttpGet]
+        public IActionResult EverythingAAApp()
+        {
+            return View();
+        }
+
         [HttpPost]
         public async Task<IActionResult> Index(string email, string password)
         {

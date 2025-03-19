@@ -157,6 +157,9 @@ builder.Services.AddMvc();
     });
 */
 
+// Add user tracking service
+builder.Services.AddSingleton<StatsTracker>();
+builder.Services.AddHttpContextAccessor();
 var app = builder.Build();
 
 if (!app.Environment.IsDevelopment())
@@ -181,6 +184,8 @@ app.UseRouting();
 app.MapControllers();
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.UseMiddleware<StatsTrackingMiddleware>();
 
 app.MapControllerRoute(
     name: "default",

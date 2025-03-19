@@ -1,0 +1,63 @@
+﻿@using os.Models
+@model Dictionary<string, DateTime>
+@functions {
+    public string HideFirstOctet(string ipAddress)
+    {
+        var parts = ipAddress.Split('.');
+        if (parts.Length == 4)
+        {
+            parts[0] = "xxx";
+            return string.Join('.', parts);
+        }
+        return ipAddress;
+    }
+}
+<div class="page-heading-container">
+    <img src="~/img/stats.svg" style="height: 150px;" />
+    <span class="page-heading">Stats</span>
+</div>
+
+
+<div class="stats-table-wrapper">   
+    <table class="table-striped active-users-tbl">
+        
+        <thead>
+            <tr class="stats-heading">
+                <th class="stats-cell-left">
+                    IP Address
+                </th>
+                <th class="stats-cell-right">
+                    Last Active
+                </th>
+            </tr>
+        </thead>
+        <tbody id="tableBody">
+            @foreach (var user in Model)
+            {
+                <tr class="stats-row">
+                    <td class="stats-tbl-row">
+                        @HideFirstOctet(user.Key)
+                    </td>
+                    <td class="stats-tbl-row">                        
+                        @user.Value
+                    </td>
+                </tr>
+
+            }
+            <tr class="stats-tbl-row stats-total-txt">
+                <td class="stats-total-cell-left">
+
+                </td>
+                <td class="stats-total-cell-right">
+                    <span>
+                        Active Count: @ViewBag.UserCount
+                    </span>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    
+</div>
+
+
+

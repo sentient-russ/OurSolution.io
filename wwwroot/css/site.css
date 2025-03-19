@@ -14,6 +14,7 @@
     --stop-red: #A81121D6;
     --rich-black: #101419;
     --electric-blue: #3E78B2;
+    --light-brown: #a16e4e
 }
 
 html {
@@ -51,7 +52,9 @@ a {
 }
 .light-txt {
     color: var(--dim-grey) !important;
+    font-size: 1.35rem;
 }
+
 .navbar-light .navbar-toggler {
     color: rgba(252, 247, 247, 0.15);
     border-color: rgba(255,255,255,.1);
@@ -123,6 +126,9 @@ a {
 
 .management-btn{
     padding-top: 2px;
+}
+.margin-top-20{
+    margin-top: 20px;
 }
 body {
     margin-bottom: 60px;
@@ -429,7 +435,6 @@ td{
     text-align: left;
 }
 
-
 .la{
     text-align: left;
 }
@@ -444,7 +449,18 @@ td{
 }
 
 .hidden {
-    display: none;
+    visibility: hidden;
+    opacity: 0;
+    height: 0;
+    overflow: hidden;
+    transition: opacity 2.5s ease-in-out, height 1s ease-in-out; 
+}
+
+.fade-in {
+    opacity: 1;
+    visibility: visible;
+    height: auto;
+    transition: opacity 2.5s ease-in-out, height 1s ease-in-out; 
 }
 
 input:-webkit-autofill,
@@ -469,7 +485,7 @@ input:-webkit-autofill:focus {
     flex-direction: column;
     padding-top: 20px;
     padding-bottom: 20px;
-    max-width: 365px;
+    max-width: 375px;
     margin-left: auto;
     margin-right: auto;
     backdrop-filter: blur(21px) saturate(137%);
@@ -500,8 +516,8 @@ input:-webkit-autofill:focus {
     border-radius: 10px;
     margin-left: 10px;
     margin-right: 10px;
-    min-height: 75px; /* Minimum height */
-    background-color: #f9f9f9; /* Optional: Add a background color */
+    min-height: 75px; 
+    background-color: #f9f9f9;
 }
 .player-controls{
     display: flex;
@@ -515,7 +531,6 @@ input:-webkit-autofill:focus {
     padding-top: 8px;
 }
 
-/* Style for the scrollable container */
 .speaker-container {
     max-height: 350px;
     overflow-y: auto;
@@ -552,13 +567,19 @@ input:-webkit-autofill:focus {
 .player-headings{
     display:flex;
     flex-direction:row;
-    font-weight: 505;
+    font-weight: 500;
+
+}
+.player-heading-txt{
+    font-size: 18px;
+    padding-right: 5px;
+    text-align: left;
 }
 .player-id-column {
     display: flex;
     flex-direction: column;
     min-width: 25px;
-    text-align:left;
+    text-align: left;
     margin-left: 10px;
 }
 .player-speaker-column {
@@ -583,12 +604,12 @@ input:-webkit-autofill:focus {
     justify-content: space-between;
     padding: 10px;
     border-bottom: 1px solid #ddd;
-    cursor: pointer; /* Change cursor to pointer on hover */
-    transition: background-color 0.3s ease; /* Smooth transition for hover effect */
+    cursor: pointer;
+    transition: background-color 0.3s ease;
 }
 
     .speaker-row:hover {
-        background-color: #f0f0f0; /* Light gray background on hover */
+        background-color: #f0f0f0; 
     }
 
 .speaker-id-column {
@@ -618,28 +639,28 @@ input:-webkit-autofill:focus {
 .odd-line {
     background-color: #ffffff;
 }
-/* Play Status Bar */
+
 .play-status-bar {
     width: 100%;
     height: 10px;
-    background-color: #ddd; /* Background color for the status bar */
+    background-color: #ddd;
     border-radius: 5px;
     margin-top: 10px;
-    overflow: hidden; /* Ensure the progress bar doesn't overflow */
+    overflow: hidden;
 }
 
 .play-status-progress {
     height: 100%;
-    width: 0%; /* Initially set to 0% */
-    background-color: #007bff; /* Progress bar color */
-    transition: width 0.1s linear; /* Smooth transition for progress */
+    width: 0%;
+    background-color: #007bff;
+    transition: width 0.1s linear; 
 }
 
 .status-message {
-    transition: opacity 1s ease-in-out; /* Smooth transition for opacity changes */
+    transition: opacity 1s ease-in-out;
 }
 .speaker-name-row {
-    transition: opacity 1s ease-in-out; /* Smooth transition for opacity changes */
+    transition: opacity 1s ease-in-out; 
     color: black;
 }
 
@@ -765,8 +786,115 @@ input:-webkit-autofill:focus {
     font-family: 'Playwrite CU', sans-serif;
     color: var(--powder-blue);
     font-size: calc(1vw + 16px);
-    line-height: calc(8vw);
+    line-height: calc(3vw + 30px);
+    font-weight: 600;
 }
+.heading-links {
+    font-family: 'Playwrite CU', sans-serif;
+    color: var(--electric-blue);
+    text-decoration: underline;
+    font-size: calc(1vw + 16px);
+    font-weight: 700;
+    line-height: calc(2vw + 30px);
+}
+    .heading-links:hover {
+        color: var(--dim-grey);
+    }
+    .heading-links.no-underline {
+        color: var(--electric-blue);
+        line-height: calc(2vw + 15px);
+        display: flex;
+        margin-top: 20px;
+        text-align: center;
+        justify-content: center;
+        margin-bottom: -13px;
+    }
+
+.meeting-name {
+    font-family: 'Playwrite CU', sans-serif;
+    color: var(--powder-blue);
+    font-size: calc(1vw + 12px);
+    line-height: calc(2vw + 15px);
+}
+.meeting-card-container{
+    display: flex;
+    justify-content: center;
+}
+.meeting-card {
+    border: 1px solid;
+    border-radius: 12px;
+    border-color: var(--powder-blue);
+    margin-bottom: 10px;
+    padding: 10px;
+    min-width: 500px;
+    max-width: 500px;
+    backdrop-filter: blur(21px) saturate(137%);
+    -webkit-backdrop-filter: blur(21px) saturate(137%);
+    background-color: rgba(255, 255, 255, 0.05);
+}
+.helpful-links-card {
+    border: 1px solid;
+    border-radius: 12px;
+    border-color: var(--powder-blue);
+    margin-bottom: 10px;
+    padding: 10px;
+    min-width: 500px;
+    max-width: 500px;
+    text-align: left;
+    font-size: 18px;
+    backdrop-filter: blur(21px) saturate(137%);
+    -webkit-backdrop-filter: blur(21px) saturate(137%);
+    background-color: rgba(255, 255, 255, 0.05);
+}
+.stats-table-wrapper {
+    overflow: auto;
+    margin-top: 5px;
+    display: flex;
+    justify-content: center;
+}
+.active-users-tbl {
+    border: 1px solid;
+    border-color: #ffffffa6;
+    width: 375px;
+    text-align: center;
+}
+.stats-cell-left{
+    border-top-left-radius:12px;
+}
+.stats-cell-right {
+    border-top-right-radius: 12px;
+}
+.stats-tbl-row{
+    text-align: center;
+}
+.page-heading-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    text-align: center;
+    margin-bottom: 30px;
+}
+.page-heading {
+    font-family: 'Playwrite CU', sans-serif;
+    color: var(--powder-blue);
+    font-size: calc(1vw + 16px);
+    font-weight: 700;
+
+}
+.stats-total-txt {
+    background-color: rgba(99, 99, 100, 0.51) !important;
+}
+.stats-total-cell-right {
+    text-align: right;
+    padding-right: 50px;
+    border-bottom-right-radius: 12px;
+}
+.stats-total-cell-left {
+    text-align: right;
+    padding-left: 20px;
+    border-bottom-left-radius: 12px;
+}
+ 
 @media screen and (max-width: 800px) {
     .container-row {
         flex-direction: column;
@@ -838,5 +966,14 @@ input:-webkit-autofill:focus {
 @media (max-width:450px) {
     .player-container {
         min-width: 95%;
+    }
+    .meeting-card {
+        min-width: 375px;
+        max-width: 375px;
+    }
+
+    .helpful-links-card {
+        min-width: 375px;
+        max-width: 375px;
     }
 }
