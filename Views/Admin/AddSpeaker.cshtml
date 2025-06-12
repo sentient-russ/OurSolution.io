@@ -2,6 +2,8 @@
 @{
     ViewData["Title"] = "Add Speaker";
     string? statusMessage = ViewBag.StatusMessage;
+    bool showConversionModal = ViewBag.ShowConversionModal == true;
+    string conversionJobId = ViewBag.ConversionJobId ?? "";
 }
 <div class="edit-container-row">
     <div class="edit-container-column">
@@ -19,32 +21,32 @@
         }
         <form asp-action="UploadSpeaker" enctype="multipart/form-data" method="post">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <div class="form-group">
+            <div class="form-group" style="margin-top: 5px;">
                 <label asp-for="FirstName" class="control-label cust-label"></label>
                 <input asp-for="FirstName" class="form-control" />
                 <span asp-validation-for="FirstName" class="text-danger"></span>
             </div>
-            <div class="form-group">
+            <div class="form-group" style="margin-top: 5px;">
                 <label asp-for="LastName" class="control-label cust-label"></label>
                 <input asp-for="LastName" class="form-control" />
                 <span asp-validation-for="LastName" class="text-danger"></span>
             </div>
-            <div class="form-group">
+            <div class="form-group" style="margin-top: 5px;">
                 <label asp-for="Description" class="control-label cust-label"></label>
                 <textarea asp-for="Description" class="form-control"></textarea>
                 <span asp-validation-for="Description" class="text-danger"></span>
             </div>
-            <div class="form-group">
+            <div class="form-group" style="margin-top: 5px;">
                 <label asp-for="DateRecorded" class="control-label cust-label"></label>
                 <input asp-for="DateRecorded" class="form-control" />
                 <span asp-validation-for="DateRecorded" class="text-danger"></span>
             </div>
-            <div class="form-group">
+            <div class="form-group" style="margin-top: 5px;">
                 <label asp-for="UploadDate" class="control-label cust-label"></label>
-                <input asp-for="UploadDate" class="form-control" readonly/>
+                <input asp-for="UploadDate" class="form-control" readonly />
                 <span asp-validation-for="UploadDate" class="text-danger"></span>
             </div>
-            <div class="form-group">
+            <div class="form-group" style="margin-top: 5px;">
                 <label asp-for="SpeakerStatus" class="control-label cust-label"></label>
                 <select asp-for="SpeakerStatus" class="form-drop-down form-select" aria-required="true">
                     <option default id="Active">Active</option>
@@ -52,7 +54,7 @@
                 </select>
                 <span asp-validation-for="SpeakerStatus" class="text-danger"></span>
             </div>
-            <div class="form-group">
+            <div class="form-group" style="margin-top: 5px;">
                 <label asp-for="Visibility" class="control-label cust-label"></label>
                 <select asp-for="Visibility" class="form-drop-down form-select" aria-required="true">
                     <option default id="Private">Private</option>
@@ -60,19 +62,191 @@
                 </select>
                 <span asp-validation-for="SpeakerStatus" class="text-danger"></span>
             </div>
-            <div class="form-group">
-                <label for="FormFile" class="control-label cust-label">Upload File:</label>
-                <input type="file" name="FormFile" class="form-control" id="FormFile" />
+            <div class="form-group" style="margin-top: 10px;">
+                <label for="CdaFiles" class="control-label cust-label">Upload CD Audio Files (.cda):</label>
+                <input type="file" name="CdaFiles" class="form-control" id="CdaFiles" multiple accept=".cda" />
+                <small class="form-text text-muted">Select multiple .cda files. They will be converted to a single .mp3</small>
+            </div>
+            <!-- Maintain the original file input for backward compatibility or direct mp3 uploads -->
+            <div class="form-group" style="margin-top: 10px;">
+                <label for="FormFile" class="control-label cust-label">Or Upload MP3 File Directly:</label>
+                <input type="file" name="FormFile" class="form-control" id="FormFile" accept=".mp3" />
+                <small class="form-text text-muted">Select a single .mp3 file if you already have one.</small>
             </div>
             <div class="form-group">
                 <a href="@Url.Action("ViewSpeakers", "Admin")" class="btn edit-btn">Back</a>
                 <input type="submit" value="Submit" class="edit-btn" />
             </div>
-
         </form>
     </div>
 </div>
 
+<!-- Conversion Modal -->
+<div class="modal fade" id="conversionModal" tabindex="-1" role="dialog" aria-labelledby="conversionModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="conversionModalLabel">CD Audio Conversion</h5>
+            </div>
+            <div class="modal-body">
+                <div id="conversion-progress-container">
+                    <h5 id="conversion-status">Status: <span id="status-text">Initializing...</span></h5>
+                    <div class="progress mb-3">
+                        <div id="progress-bar" class="progress-bar" role="progressbar" style="width: 0%;"
+                             aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                            0%
+                        </div>
+                    </div>
+
+                    <div id="conversion-details">
+                        <p><strong>Started:</strong> <span id="start-time"></span></p>
+                        <p><strong>Files:</strong> <span id="files-progress"></span></p>
+                    </div>
+
+                    <div id="conversion-spinner" class="text-center">
+                        <p class="text-muted">Please wait while your CD audio is being converted. This may take several minutes.</p>
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="conversion-complete" style="display: none;">
+                    <div class="alert alert-success">
+                        <h4>Conversion Complete!</h4>
+                        <p id="success-message">Your CD audio tracks have been successfully converted and the speaker has been added.</p>
+                    </div>
+                </div>
+
+                <div id="conversion-error" style="display: none;">
+                    <div class="alert alert-danger">
+                        <h4>Conversion Failed</h4>
+                        <p id="error-message"></p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <a id="view-speakers-btn" href="@Url.Action("ViewSpeakers")" class="btn btn-primary" style="display: none;">View Speakers</a>
+                <button id="retry-btn" type="button" class="btn btn-primary" style="display: none;" onclick="window.location.reload()">Try Again</button>
+                <button id="close-btn" type="button" class="btn btn-secondary" data-dismiss="modal" style="display: none;">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <!-- Add the necessary JavaScript for the conversion modal -->
+    <script>
+        // Client-side validation to ensure the user doesn't select both types of files
+        document.addEventListener('DOMContentLoaded', function() {
+            const cdaFilesInput = document.getElementById('CdaFiles');
+            const formFileInput = document.getElementById('FormFile');
+
+            cdaFilesInput.addEventListener('change', function() {
+                if (this.files.length > 0) {
+                    formFileInput.value = '';
+                    formFileInput.disabled = true;
+                } else {
+                    formFileInput.disabled = false;
+                }
+            });
+
+            formFileInput.addEventListener('change', function() {
+                if (this.files.length > 0) {
+                    cdaFilesInput.value = '';
+                    cdaFilesInput.disabled = true;
+                } else {
+                    cdaFilesInput.disabled = false;
+                }
+            });
+
+            // Show conversion modal if needed
+            const showModal = @Json.Serialize(showConversionModal);
+            const jobId = '@conversionJobId';
+
+            if (showModal && jobId) {
+                $('#conversionModal').modal('show');
+                monitorConversionProgress(jobId);
+            }
+        });
+
+        function monitorConversionProgress(jobId) {
+            // Check status every 2 seconds
+            const statusInterval = setInterval(function() {
+                fetch(`/api/conversion-status/${jobId}`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Error fetching conversion status');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        updateProgressUI(data);
+
+                        // If job is complete or failed, stop checking
+                        if (data.status === 'Completed' || data.status === 'Failed' || data.complete || data.error) {
+                            clearInterval(statusInterval);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        clearInterval(statusInterval);
+                        showError('Error fetching conversion status');
+                    });
+            }, 2000);
+        }
+
+        function updateProgressUI(data) {
+            // Update status text
+            document.getElementById('status-text').textContent = data.status;
+
+            // Update progress bar
+            const progressBar = document.getElementById('progress-bar');
+            progressBar.style.width = `${data.progress}%`;
+            progressBar.textContent = `${data.progress}%`;
+            progressBar.setAttribute('aria-valuenow', data.progress);
+
+            // Update details
+            document.getElementById('start-time').textContent = new Date(data.startTime).toLocaleString();
+            document.getElementById('files-progress').textContent = `${data.completedFiles} / ${data.totalFiles}`;
+
+            // Handle completion
+            if (data.status === 'Completed' || data.complete) {
+                document.getElementById('conversion-spinner').style.display = 'none';
+                document.getElementById('conversion-complete').style.display = 'block';
+                document.getElementById('view-speakers-btn').style.display = 'inline-block';
+                document.getElementById('close-btn').style.display = 'inline-block';
+
+                if (data.successMessage) {
+                    document.getElementById('success-message').textContent = data.successMessage;
+                }
+            }
+
+            // Handle error
+            if (data.status === 'Failed' || data.error) {
+                document.getElementById('conversion-spinner').style.display = 'none';
+                document.getElementById('conversion-error').style.display = 'block';
+                document.getElementById('retry-btn').style.display = 'inline-block';
+                document.getElementById('close-btn').style.display = 'inline-block';
+
+                if (data.errorMessage) {
+                    document.getElementById('error-message').textContent = data.errorMessage;
+                } else {
+                    document.getElementById('error-message').textContent = 'An error occurred during conversion.';
+                }
+            }
+        }
+
+        function showError(message) {
+            document.getElementById('conversion-spinner').style.display = 'none';
+            document.getElementById('conversion-error').style.display = 'block';
+            document.getElementById('retry-btn').style.display = 'inline-block';
+            document.getElementById('close-btn').style.display = 'inline-block';
+            document.getElementById('error-message').textContent = message;
+        }
+    </script>
 }

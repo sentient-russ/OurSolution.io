@@ -1,21 +1,25 @@
-﻿namespace os.Services
+﻿using os.Services;
+
+public class StatsTrackingMiddleware
 {
-    public class StatsTrackingMiddleware
+    private readonly RequestDelegate _next;
+    private readonly IServiceProvider _serviceProvider;
+
+    public StatsTrackingMiddleware(RequestDelegate next, IServiceProvider serviceProvider)
     {
-        private readonly RequestDelegate _next;
-        private readonly StatsTracker _statsTracker;
-
-        public StatsTrackingMiddleware(RequestDelegate next, StatsTracker statsTracker)
-        {
-            _next = next;
-            _statsTracker = statsTracker;
-        }
-
-        public async Task InvokeAsync(HttpContext context)
-        {
-            _statsTracker.TrackRequest();
-            await _next(context);
-        }
+        _next = next;
+        _serviceProvider = serviceProvider;
     }
 
+    public async Task InvokeAsync(HttpContext context)
+    {
+        // Get the StatsTracker service from the scoped services
+        var statsTracker = context.RequestServices.GetRequiredService<StatsTracker>();
+
+        // Track the request
+        statsTracker.TrackRequest();
+
+        // Call the next middleware in the pipeline
+        await _next(context);
+    }
 }

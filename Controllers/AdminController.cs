@@ -92,9 +92,12 @@ namespace os.Controllers
         }
         [HttpPost]
         [Authorize(Roles = "Administrator")]
-        [RequestSizeLimit(300 * 1024 * 1024)] // 200MB        
-        public async Task<IActionResult> UploadSpeaker([Bind("SpeakerId, FileName, FirstName, LastName, Description, NumUpVotes, DateRecorded, UploadDate, UploadedBy, SpeakerStatus, Visibility, FormFile")] SpeakerModel newSpeakerIn)
+        [RequestSizeLimit(700 * 1024 * 1024)] // 700MB
+        public async Task<IActionResult> UploadSpeaker([Bind("SpeakerId, FileName, FirstName, LastName, Description, NumUpVotes, DateRecorded, UploadDate, UploadedBy, SpeakerStatus, Visibility, FormFile, CdaFiles")] SpeakerModel newSpeakerIn)
         {
+            //CDA conversion requires the FFmpeg command line utility to be installed. It is not a NuGet package.
+            //for Windows choco install ffmpeg
+            //for Debian Linux apt-get install ffmpeg
             var LoggedInAppUser = await _userManager.GetUserAsync(User);
 
             // reformat names of the speaker and uploading user to capital first name letter followed by lowercase and the same for the speaker.
@@ -102,23 +105,50 @@ namespace os.Controllers
             string speakerFirstNamePostFix = newSpeakerIn.FirstName.Substring(1).ToLower();
             string speakerFirstName = speakerFirstNameInitial + speakerFirstNamePostFix;
             newSpeakerIn.FirstName = speakerFirstName;
+            
             string speakerLastNameInitial = newSpeakerIn.LastName.Substring(0, 1).ToUpper();
             string speakerLastNamePostFix = newSpeakerIn.LastName.Substring(1).ToLower();
             string speakerLastName = speakerLastNameInitial + speakerLastNamePostFix;
             newSpeakerIn.LastName = speakerLastName;
+            
             string? speakerAbbreviation = newSpeakerIn.FirstName + "_" + newSpeakerIn.LastName.Substring(0, 1).ToUpper();
             string? LoggedInUserAbbreviation = LoggedInAppUser.FirstName + "_" + LoggedInAppUser.LastName.Substring(0, 1).ToUpper();
 
+            // Check if we have CDA files to process
+            if (newSpeakerIn.CdaFiles != null && newSpeakerIn.CdaFiles.Count > 0)
+            {
+                // Inject the CDA conversion service
+                var cdaService = HttpContext.RequestServices.GetRequiredService<CdaConversionService>();
+                
+                // Queue the conversion job
+                var jobId = cdaService.QueueConversion(newSpeakerIn.CdaFiles, speakerAbbreviation);
+                
+                // Store the speaker info and job ID in TempData to be used by the modal
+                TempData["ConversionJobId"] = jobId;
+                TempData["SpeakerFirstName"] = newSpeakerIn.FirstName;
+                TempData["SpeakerLastName"] = newSpeakerIn.LastName;
+                TempData["SpeakerDescription"] = newSpeakerIn.Description;
+                TempData["SpeakerDateRecorded"] = newSpeakerIn.DateRecorded?.ToString("yyyy-MM-dd");
+                TempData["SpeakerStatus"] = newSpeakerIn.SpeakerStatus;
+                TempData["SpeakerVisibility"] = newSpeakerIn.Visibility;
+                
+                // Return to AddSpeaker view with a flag to show the conversion modal
+                ViewBag.ShowConversionModal = true;
+                ViewBag.ConversionJobId = jobId;
+                return View("AddSpeaker");
+            }
+            
+            // Handle direct MP3 upload (existing code)
             if (newSpeakerIn.FormFile == null || newSpeakerIn.FormFile.Length == 0)
             {
                 ViewBag.StatusMessage = "No file selected.";
                 return View("AddSpeaker");
             }
 
-            const long max_size = 200 * 1024 * 1024;
+            const long max_size = 700 * 1024 * 1024;
             if (newSpeakerIn.FormFile.Length > max_size)
             {
-                ViewBag.StatusMessage = $"The file size must be less than 200MB. THe current file is {newSpeakerIn.FormFile.Length.ToString()}";
+                ViewBag.StatusMessage = $"The file size must be less than 200MB. The current file is {newSpeakerIn.FormFile.Length.ToString()}";
                 return View("AddSpeaker");
             }
 
@@ -171,6 +201,122 @@ namespace os.Controllers
                 ViewBag.StatusMessage = "User not found.";
                 return View("AddSpeaker");
             }
+        }
+
+        [Authorize(Roles = "Administrator")]
+        [HttpGet]
+        public IActionResult ConversionStatus(string jobId)
+        {
+            if (string.IsNullOrEmpty(jobId))
+            {
+                return NotFound();
+            }
+            
+            var cdaService = HttpContext.RequestServices.GetRequiredService<CdaConversionService>();
+            var job = cdaService.GetJobStatus(jobId);
+            
+            if (job == null)
+            {
+                return NotFound();
+            }
+            
+            // If the job is complete, save the speaker to database
+            if (job.Status == "Completed" && !string.IsNullOrEmpty(job.OutputFileName))
+            {
+                // Create a new speaker model using TempData values
+                var speaker = new SpeakerModel
+                {
+                    FirstName = TempData["SpeakerFirstName"]?.ToString(),
+                    LastName = TempData["SpeakerLastName"]?.ToString(),
+                    Description = TempData["SpeakerDescription"]?.ToString(),
+                    DateRecorded = DateTime.TryParse(TempData["SpeakerDateRecorded"]?.ToString(), out var date) ? date : DateTime.Now,
+                    SpeakerStatus = TempData["SpeakerStatus"]?.ToString() ?? "Active",
+                    Visibility = TempData["SpeakerVisibility"]?.ToString() ?? "Private",
+                    UploadDate = DateTime.UtcNow,
+                    SecretFileName = job.OutputFileName,
+                    DisplayFileName = job.SpeakerAbbreviation,
+                    UploadedById = User.FindFirstValue(ClaimTypes.NameIdentifier),
+                    UploadedBy = $"{User.FindFirstValue(ClaimTypes.GivenName)}_{User.FindFirstValue(ClaimTypes.Surname)?.Substring(0, 1).ToUpper()}"
+                };
+                
+                var succeeded = _dbConnectionService.AddSpeaker(speaker);
+                
+                if (succeeded)
+                {
+                    ViewBag.StatusMessage = "Conversion completed and speaker saved successfully.";
+                    ViewBag.Complete = true;
+                }
+                else
+                {
+                    ViewBag.StatusMessage = "Conversion completed but error saving speaker.";
+                    ViewBag.Error = true;
+                }
+            }
+            
+            return View(job);
+        }
+
+        [Authorize(Roles = "Administrator")]
+        [HttpGet]
+        [Route("api/conversion-status/{jobId}")]
+        public IActionResult GetConversionStatus(string jobId)
+        {
+            if (string.IsNullOrEmpty(jobId))
+            {
+                return NotFound();
+            }
+            
+            var cdaService = HttpContext.RequestServices.GetRequiredService<CdaConversionService>();
+            var job = cdaService.GetJobStatus(jobId);
+            
+            if (job == null)
+            {
+                return NotFound();
+            }
+            
+            // If the job is complete, save the speaker to database
+            if (job.Status == "Completed" && !string.IsNullOrEmpty(job.OutputFileName) && TempData.Peek("SpeakerFirstName") != null)
+            {
+                // Create a new speaker model using TempData values
+                var speaker = new SpeakerModel
+                {
+                    FirstName = TempData["SpeakerFirstName"]?.ToString(),
+                    LastName = TempData["SpeakerLastName"]?.ToString(),
+                    Description = TempData["SpeakerDescription"]?.ToString(),
+                    DateRecorded = DateTime.TryParse(TempData["SpeakerDateRecorded"]?.ToString(), out var date) ? date : DateTime.Now,
+                    SpeakerStatus = TempData["SpeakerStatus"]?.ToString() ?? "Active",
+                    Visibility = TempData["SpeakerVisibility"]?.ToString() ?? "Private",
+                    UploadDate = DateTime.UtcNow,
+                    SecretFileName = job.OutputFileName,
+                    DisplayFileName = job.SpeakerAbbreviation,
+                    UploadedById = User.FindFirstValue(ClaimTypes.NameIdentifier),
+                    UploadedBy = $"{User.FindFirstValue(ClaimTypes.GivenName)}_{User.FindFirstValue(ClaimTypes.Surname)?.Substring(0, 1).ToUpper()}"
+                };
+                
+                var succeeded = _dbConnectionService.AddSpeaker(speaker);
+                
+                if (succeeded)
+                {
+                    job.Complete = true;
+                    job.SuccessMessage = "Conversion completed and speaker saved successfully.";
+                }
+                else
+                {
+                    job.Error = true;
+                    job.ErrorMessage = "Conversion completed but error saving speaker.";
+                }
+                
+                // Clear the TempData after successful processing
+                TempData.Remove("SpeakerFirstName");
+                TempData.Remove("SpeakerLastName");
+                TempData.Remove("SpeakerDescription");
+                TempData.Remove("SpeakerDateRecorded");
+                TempData.Remove("SpeakerStatus");
+                TempData.Remove("SpeakerVisibility");
+                TempData.Remove("ConversionJobId");
+            }
+            
+            return Json(job);
         }
 
         [Authorize(Roles = "Administrator")]

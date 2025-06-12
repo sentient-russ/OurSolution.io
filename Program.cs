@@ -157,9 +157,11 @@ builder.Services.AddMvc();
     });
 */
 
-// Add user tracking service
-builder.Services.AddSingleton<StatsTracker>();
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<StatsTracker>();
+builder.Services.AddScoped<IVisitorRepository, VisitorRepository>();
+builder.Services.AddHostedService<CdaConversionService>();
+builder.Services.AddSingleton<CdaConversionService>();
 var app = builder.Build();
 
 if (!app.Environment.IsDevelopment())

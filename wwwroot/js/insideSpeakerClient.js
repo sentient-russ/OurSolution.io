@@ -173,8 +173,9 @@
         fileItems.forEach((fileItem) => {
             const speakerIdColumn = fileItem.querySelector('.player-id-column');
             const displayNameColumn = fileItem.querySelector('.player-speaker-column');
-            const descriptionColumn = fileItem.querySelector('.player-description-column');
-            const rowText = `${speakerIdColumn.textContent} ${displayNameColumn.textContent} ${descriptionColumn.textContent}`.toLowerCase() ;
+            //const descriptionColumn = fileItem.querySelector('.player-description-column');
+            //const rowText = `${speakerIdColumn.textContent} ${displayNameColumn.textContent} ${descriptionColumn.textContent}`.toLowerCase() ;
+            const rowText = `${speakerIdColumn.textContent} ${displayNameColumn.textContent}`.toLowerCase() ;
             fileItem.style.display = rowText.includes(searchTerm) ? 'flex' : 'none';
         });
     }

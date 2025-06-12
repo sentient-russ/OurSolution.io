@@ -69,5 +69,14 @@ namespace os.Models
         [NotMapped]
         [Required]
         public IFormFile? FormFile { get; set; }
+
+        [NotMapped]
+        public List<IFormFile> CdaFiles { get; set; }
+
+        [NotMapped]
+        public string ConversionStatus { get; set; }
+
+        [NotMapped]
+        public string ConversionId { get; set; }
     }
 }

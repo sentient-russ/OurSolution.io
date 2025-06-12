@@ -16,6 +16,7 @@ public class ApplicationDbContext : IdentityDbContext<AppUser>
     public virtual DbSet<os.Models.SpeakerModel> Speakers { get; set; } = default!;
     public virtual DbSet<os.Models.AnnouncementModel> Announcements { get; set; } = default!;
     public virtual DbSet<os.Models.MeetingModel> Meetings { get; set; } = default!;
+    public virtual DbSet<os.Models.PageVisitModel> PageVisits { get; set; } = default!;
     //the next section overrides the default db naming
     protected override void OnModelCreating(ModelBuilder builder)
     {
