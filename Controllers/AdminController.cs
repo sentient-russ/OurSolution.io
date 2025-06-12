@@ -93,11 +93,8 @@ namespace os.Controllers
         [HttpPost]
         [Authorize(Roles = "Administrator")]
         [RequestSizeLimit(700 * 1024 * 1024)] // 700MB
-        public async Task<IActionResult> UploadSpeaker([Bind("SpeakerId, FileName, FirstName, LastName, Description, NumUpVotes, DateRecorded, UploadDate, UploadedBy, SpeakerStatus, Visibility, FormFile, CdaFiles")] SpeakerModel newSpeakerIn)
+        public async Task<IActionResult> UploadSpeaker([Bind("SpeakerId, FileName, FirstName, LastName, Description, NumUpVotes, DateRecorded, UploadDate, UploadedBy, SpeakerStatus, Visibility, FormFile")] SpeakerModel newSpeakerIn)
         {
-            //CDA conversion requires the FFmpeg command line utility to be installed. It is not a NuGet package.
-            //for Windows choco install ffmpeg
-            //for Debian Linux apt-get install ffmpeg
             var LoggedInAppUser = await _userManager.GetUserAsync(User);
 
             // reformat names of the speaker and uploading user to capital first name letter followed by lowercase and the same for the speaker.
@@ -113,32 +110,8 @@ namespace os.Controllers
             
             string? speakerAbbreviation = newSpeakerIn.FirstName + "_" + newSpeakerIn.LastName.Substring(0, 1).ToUpper();
             string? LoggedInUserAbbreviation = LoggedInAppUser.FirstName + "_" + LoggedInAppUser.LastName.Substring(0, 1).ToUpper();
-
-            // Check if we have CDA files to process
-            if (newSpeakerIn.CdaFiles != null && newSpeakerIn.CdaFiles.Count > 0)
-            {
-                // Inject the CDA conversion service
-                var cdaService = HttpContext.RequestServices.GetRequiredService<CdaConversionService>();
-                
-                // Queue the conversion job
-                var jobId = cdaService.QueueConversion(newSpeakerIn.CdaFiles, speakerAbbreviation);
-                
-                // Store the speaker info and job ID in TempData to be used by the modal
-                TempData["ConversionJobId"] = jobId;
-                TempData["SpeakerFirstName"] = newSpeakerIn.FirstName;
-                TempData["SpeakerLastName"] = newSpeakerIn.LastName;
-                TempData["SpeakerDescription"] = newSpeakerIn.Description;
-                TempData["SpeakerDateRecorded"] = newSpeakerIn.DateRecorded?.ToString("yyyy-MM-dd");
-                TempData["SpeakerStatus"] = newSpeakerIn.SpeakerStatus;
-                TempData["SpeakerVisibility"] = newSpeakerIn.Visibility;
-                
-                // Return to AddSpeaker view with a flag to show the conversion modal
-                ViewBag.ShowConversionModal = true;
-                ViewBag.ConversionJobId = jobId;
-                return View("AddSpeaker");
-            }
             
-            // Handle direct MP3 upload (existing code)
+            // Handle MP3 upload
             if (newSpeakerIn.FormFile == null || newSpeakerIn.FormFile.Length == 0)
             {
                 ViewBag.StatusMessage = "No file selected.";
@@ -148,7 +121,7 @@ namespace os.Controllers
             const long max_size = 700 * 1024 * 1024;
             if (newSpeakerIn.FormFile.Length > max_size)
             {
-                ViewBag.StatusMessage = $"The file size must be less than 200MB. The current file is {newSpeakerIn.FormFile.Length.ToString()}";
+                ViewBag.StatusMessage = $"The file size must be less than 700MB. The current file is {newSpeakerIn.FormFile.Length} bytes.";
                 return View("AddSpeaker");
             }
 
@@ -157,6 +130,37 @@ namespace os.Controllers
             {
                 ViewBag.StatusMessage = "The file type must be a .mp3 type.";
                 return View("AddSpeaker");
+            }
+
+            // Validate MP3 format by checking file signature
+            using (var stream = newSpeakerIn.FormFile.OpenReadStream())
+            {
+                byte[] header = new byte[10]; // Read enough bytes to check for MP3 headers
+                if (await stream.ReadAsync(header, 0, header.Length) < 3)
+                {
+                    ViewBag.StatusMessage = "The file is too small to be a valid MP3.";
+                    return View("AddSpeaker");
+                }
+
+                bool isValidMp3 = false;
+
+                // Check for ID3v2 tag (ID3)
+                if (header[0] == 0x49 && header[1] == 0x44 && header[2] == 0x33)
+                {
+                    isValidMp3 = true;
+                }
+                // Check for MPEG frame sync (common MP3 frame header starts with 11 bits set)
+                // Most MP3 files will have a sync word that starts with 0xFF followed by 0xF...
+                else if (header[0] == 0xFF && (header[1] & 0xE0) == 0xE0)
+                {
+                    isValidMp3 = true;
+                }
+
+                if (!isValidMp3)
+                {
+                    ViewBag.StatusMessage = "The file does not appear to be a valid MP3 file.";
+                    return View("AddSpeaker");
+                }
             }
 
             DateTimeOffset current_time = DateTimeOffset.UtcNow;
@@ -205,122 +209,6 @@ namespace os.Controllers
 
         [Authorize(Roles = "Administrator")]
         [HttpGet]
-        public IActionResult ConversionStatus(string jobId)
-        {
-            if (string.IsNullOrEmpty(jobId))
-            {
-                return NotFound();
-            }
-            
-            var cdaService = HttpContext.RequestServices.GetRequiredService<CdaConversionService>();
-            var job = cdaService.GetJobStatus(jobId);
-            
-            if (job == null)
-            {
-                return NotFound();
-            }
-            
-            // If the job is complete, save the speaker to database
-            if (job.Status == "Completed" && !string.IsNullOrEmpty(job.OutputFileName))
-            {
-                // Create a new speaker model using TempData values
-                var speaker = new SpeakerModel
-                {
-                    FirstName = TempData["SpeakerFirstName"]?.ToString(),
-                    LastName = TempData["SpeakerLastName"]?.ToString(),
-                    Description = TempData["SpeakerDescription"]?.ToString(),
-                    DateRecorded = DateTime.TryParse(TempData["SpeakerDateRecorded"]?.ToString(), out var date) ? date : DateTime.Now,
-                    SpeakerStatus = TempData["SpeakerStatus"]?.ToString() ?? "Active",
-                    Visibility = TempData["SpeakerVisibility"]?.ToString() ?? "Private",
-                    UploadDate = DateTime.UtcNow,
-                    SecretFileName = job.OutputFileName,
-                    DisplayFileName = job.SpeakerAbbreviation,
-                    UploadedById = User.FindFirstValue(ClaimTypes.NameIdentifier),
-                    UploadedBy = $"{User.FindFirstValue(ClaimTypes.GivenName)}_{User.FindFirstValue(ClaimTypes.Surname)?.Substring(0, 1).ToUpper()}"
-                };
-                
-                var succeeded = _dbConnectionService.AddSpeaker(speaker);
-                
-                if (succeeded)
-                {
-                    ViewBag.StatusMessage = "Conversion completed and speaker saved successfully.";
-                    ViewBag.Complete = true;
-                }
-                else
-                {
-                    ViewBag.StatusMessage = "Conversion completed but error saving speaker.";
-                    ViewBag.Error = true;
-                }
-            }
-            
-            return View(job);
-        }
-
-        [Authorize(Roles = "Administrator")]
-        [HttpGet]
-        [Route("api/conversion-status/{jobId}")]
-        public IActionResult GetConversionStatus(string jobId)
-        {
-            if (string.IsNullOrEmpty(jobId))
-            {
-                return NotFound();
-            }
-            
-            var cdaService = HttpContext.RequestServices.GetRequiredService<CdaConversionService>();
-            var job = cdaService.GetJobStatus(jobId);
-            
-            if (job == null)
-            {
-                return NotFound();
-            }
-            
-            // If the job is complete, save the speaker to database
-            if (job.Status == "Completed" && !string.IsNullOrEmpty(job.OutputFileName) && TempData.Peek("SpeakerFirstName") != null)
-            {
-                // Create a new speaker model using TempData values
-                var speaker = new SpeakerModel
-                {
-                    FirstName = TempData["SpeakerFirstName"]?.ToString(),
-                    LastName = TempData["SpeakerLastName"]?.ToString(),
-                    Description = TempData["SpeakerDescription"]?.ToString(),
-                    DateRecorded = DateTime.TryParse(TempData["SpeakerDateRecorded"]?.ToString(), out var date) ? date : DateTime.Now,
-                    SpeakerStatus = TempData["SpeakerStatus"]?.ToString() ?? "Active",
-                    Visibility = TempData["SpeakerVisibility"]?.ToString() ?? "Private",
-                    UploadDate = DateTime.UtcNow,
-                    SecretFileName = job.OutputFileName,
-                    DisplayFileName = job.SpeakerAbbreviation,
-                    UploadedById = User.FindFirstValue(ClaimTypes.NameIdentifier),
-                    UploadedBy = $"{User.FindFirstValue(ClaimTypes.GivenName)}_{User.FindFirstValue(ClaimTypes.Surname)?.Substring(0, 1).ToUpper()}"
-                };
-                
-                var succeeded = _dbConnectionService.AddSpeaker(speaker);
-                
-                if (succeeded)
-                {
-                    job.Complete = true;
-                    job.SuccessMessage = "Conversion completed and speaker saved successfully.";
-                }
-                else
-                {
-                    job.Error = true;
-                    job.ErrorMessage = "Conversion completed but error saving speaker.";
-                }
-                
-                // Clear the TempData after successful processing
-                TempData.Remove("SpeakerFirstName");
-                TempData.Remove("SpeakerLastName");
-                TempData.Remove("SpeakerDescription");
-                TempData.Remove("SpeakerDateRecorded");
-                TempData.Remove("SpeakerStatus");
-                TempData.Remove("SpeakerVisibility");
-                TempData.Remove("ConversionJobId");
-            }
-            
-            return Json(job);
-        }
-
-        [Authorize(Roles = "Administrator")]
-        [HttpGet]
         public async Task<IActionResult> EditSpeakerDetails(string? Id)
         {
             if (!int.TryParse(Id, out int id))
@@ -333,9 +221,16 @@ namespace os.Controllers
 
         [Authorize(Roles = "Administrator")]
         [HttpPost]
+        [RequestSizeLimit(700 * 1024 * 1024)] // 700MB
         public async Task<IActionResult> UpdateSpeaker([Bind("SpeakerId, FileName, FirstName, LastName, Description, NumUpVotes, DateRecorded, UploadDate, UploadedBy, SpeakerStatus, Visibility, FormFile")] SpeakerModel newSpeakerIn)
         {
             var LoggedInAppUser = await _userManager.GetUserAsync(User);
+            if (LoggedInAppUser == null)
+            {
+                ViewBag.StatusMessage = "User not found.";
+                return View("EditSpeakerDetails", newSpeakerIn);
+            }
+
             // enforce speaker name formatting rules
             string speakerFirstNameInitial = newSpeakerIn.FirstName.Substring(0, 1).ToUpper();
             string speakerFirstNamePostFix = newSpeakerIn.FirstName.Substring(1).ToLower();
@@ -347,31 +242,112 @@ namespace os.Controllers
             newSpeakerIn.LastName = speakerLastName;
 
             string? LoggedInUserAbbreviation = LoggedInAppUser.FirstName + "_" + LoggedInAppUser.LastName.Substring(0, 1).ToUpper();
+            string? speakerAbbreviation = newSpeakerIn.FirstName + "_" + newSpeakerIn.LastName.Substring(0, 1).ToUpper();
 
-            DateTimeOffset current_time = DateTimeOffset.UtcNow;
-            long ms_time = current_time.ToUnixTimeMilliseconds();
-            string new_file_name = LoggedInUserAbbreviation + "_" + ms_time.ToString() + ".mp3";
-
-            if (LoggedInAppUser != null)
+            // Handle file upload if provided (optional)
+            if (newSpeakerIn.FormFile != null && newSpeakerIn.FormFile.Length > 0)
             {
-                var succeeded = _dbConnectionService.UpdateSpeakerDetails(newSpeakerIn);
-                if (succeeded)
+                // Check file size
+                const long max_size = 700 * 1024 * 1024; // 700MB
+                if (newSpeakerIn.FormFile.Length > max_size)
                 {
-                    ViewBag.StatusMessage = "Speaker updated successfully.";
-                    return RedirectToAction("Index");
+                    ViewBag.StatusMessage = $"The file size must be less than 700MB. The current file is {newSpeakerIn.FormFile.Length} bytes.";
+                    return View("EditSpeakerDetails", newSpeakerIn);
                 }
-                else
+
+                // Check file extension first
+                var fileExtension = Path.GetExtension(newSpeakerIn.FormFile.FileName).ToLowerInvariant();
+                if (fileExtension != ".mp3")
                 {
-                    ViewBag.StatusMessage = "Error updating. Try again or contact development.";
-                    return View("UpdateSpeaker");
+                    ViewBag.StatusMessage = "The file type must be a .mp3 type.";
+                    return View("EditSpeakerDetails", newSpeakerIn);
+                }
+
+                // Validate MP3 format by checking file signature
+                using (var stream = newSpeakerIn.FormFile.OpenReadStream())
+                {
+                    byte[] header = new byte[10]; // Read enough bytes to check for MP3 headers
+                    if (await stream.ReadAsync(header, 0, header.Length) < 3)
+                    {
+                        ViewBag.StatusMessage = "The file is too small to be a valid MP3.";
+                        return View("EditSpeakerDetails", newSpeakerIn);
+                    }
+
+                    bool isValidMp3 = false;
+
+                    // Check for ID3v2 tag (ID3)
+                    if (header[0] == 0x49 && header[1] == 0x44 && header[2] == 0x33)
+                    {
+                        isValidMp3 = true;
+                    }
+                    // Check for MPEG frame sync (common MP3 frame header starts with 11 bits set)
+                    // Most MP3 files will have a sync word that starts with 0xFF followed by 0xF...
+                    else if (header[0] == 0xFF && (header[1] & 0xE0) == 0xE0)
+                    {
+                        isValidMp3 = true;
+                    }
+
+                    if (!isValidMp3)
+                    {
+                        ViewBag.StatusMessage = "The file does not appear to be a valid MP3 file.";
+                        return View("EditSpeakerDetails", newSpeakerIn);
+                    }
+                }
+
+                // Process and save the file
+                DateTimeOffset current_time = DateTimeOffset.UtcNow;
+                long ms_time = current_time.ToUnixTimeMilliseconds();
+                string new_file_name = speakerAbbreviation + "_" + ms_time.ToString() + ".mp3";
+
+                var filePath = Path.Combine("wwwroot", "uploads", new_file_name);
+                try
+                {
+                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await newSpeakerIn.FormFile.CopyToAsync(stream);
+                    }
+                    
+                    // Update the file name in the model
+                    newSpeakerIn.SecretFileName = new_file_name;
+                    newSpeakerIn.DisplayFileName = speakerAbbreviation;
+                }
+                catch (Exception ex)
+                {
+                    ViewBag.StatusMessage = "Error uploading file: " + ex.Message;
+                    return View("EditSpeakerDetails", newSpeakerIn);
                 }
             }
             else
             {
-                ViewBag.StatusMessage = "User not found.";
-                return View("UpdateSpeaker");
+                // No file provided - only updating speaker details
+                // Make sure we're not overwriting existing file information
+                if (newSpeakerIn.SpeakerId.HasValue)
+                {
+                    // Get existing speaker to preserve file information
+                    var existingSpeaker = _dbConnectionService.GetSpeakerById(newSpeakerIn.SpeakerId.Value);
+                    if (existingSpeaker != null)
+                    {
+                        // Preserve the existing file information
+                        newSpeakerIn.SecretFileName = existingSpeaker.SecretFileName;
+                        newSpeakerIn.DisplayFileName = existingSpeaker.DisplayFileName;
+                    }
+                }
+            }
+
+            // Update speaker details in database
+            var succeeded = _dbConnectionService.UpdateSpeakerDetails(newSpeakerIn);
+            if (succeeded)
+            {
+                ViewBag.StatusMessage = "Speaker updated successfully.";
+                return RedirectToAction("Index");
+            }
+            else
+            {
+                ViewBag.StatusMessage = "Error updating. Try again or contact development.";
+                return View("EditSpeakerDetails", newSpeakerIn);
             }
         }
+
         [Authorize(Roles = "Administrator")]
         [HttpGet]
         public async Task<IActionResult> ViewLogs()

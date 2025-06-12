@@ -106,7 +106,8 @@ namespace os.Services
                     TotalPageViews = 0,
                     VisitsByPage = new Dictionary<string, int>(),
                     VisitsByReferrer = new Dictionary<string, int>(),
-                    VisitsByDay = new Dictionary<DateTime, int>()
+                    VisitsByDay = new Dictionary<DateTime, int>(),
+                    MonthlyUniqueVisitors = new Dictionary<string, int>()
                 };
             }
 
@@ -114,6 +115,32 @@ namespace os.Services
             endDate ??= DateTime.UtcNow;
 
             return _visitorRepository.GetVisitorStats(startDate.Value, endDate.Value);
+        }
+
+        [Authorize(Roles = "Administrator")]
+        public Dictionary<int, Dictionary<int, int>> GetMonthlyUniqueVisitorsByYear(int yearsToInclude = 3)
+        {
+            if (_visitorRepository == null)
+            {
+                return new Dictionary<int, Dictionary<int, int>>();
+            }
+
+            var currentYear = DateTime.UtcNow.Year;
+            var startDate = new DateTime(currentYear - yearsToInclude + 1, 1, 1);
+            var endDate = new DateTime(currentYear, 12, 31, 23, 59, 59);
+
+            return _visitorRepository.GetMonthlyUniqueVisitorsByYear(startDate, endDate);
+        }
+
+        [Authorize(Roles = "Administrator")]
+        public List<int> GetAvailableYears()
+        {
+            if (_visitorRepository == null)
+            {
+                return new List<int> { DateTime.UtcNow.Year };
+            }
+
+            return _visitorRepository.GetAvailableYears();
         }
     }
 
@@ -123,6 +150,8 @@ namespace os.Services
     {
         void TrackVisit(VisitorData visit);
         VisitorStats GetVisitorStats(DateTime startDate, DateTime endDate);
+        Dictionary<int, Dictionary<int, int>> GetMonthlyUniqueVisitorsByYear(DateTime startDate, DateTime endDate);
+        List<int> GetAvailableYears();
     }
 
     public class VisitorData
@@ -142,5 +171,6 @@ namespace os.Services
         public Dictionary<string, int> VisitsByPage { get; set; }
         public Dictionary<string, int> VisitsByReferrer { get; set; }
         public Dictionary<DateTime, int> VisitsByDay { get; set; }
+        public Dictionary<string, int> MonthlyUniqueVisitors { get; set; } // Format: "YYYY-MM"
     }
 }

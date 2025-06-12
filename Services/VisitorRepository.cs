@@ -28,7 +28,7 @@ namespace os.Services
                 Referrer = visit.Referrer,
                 Timestamp = visit.Timestamp
             });
-            
+
             _context.SaveChanges();
         }
 
@@ -48,8 +48,58 @@ namespace os.Services
                     .GroupBy(v => v.Referrer)
                     .ToDictionary(g => g.Key, g => g.Count()),
                 VisitsByDay = visits.GroupBy(v => v.Timestamp.Date)
-                    .ToDictionary(g => g.Key, g => g.Count())
+                    .ToDictionary(g => g.Key, g => g.Count()),
+                MonthlyUniqueVisitors = visits.GroupBy(v => new { Year = v.Timestamp.Year, Month = v.Timestamp.Month })
+                    .ToDictionary(
+                        g => $"{g.Key.Year}-{g.Key.Month:D2}",
+                        g => g.Select(v => v.VisitorId).Distinct().Count()
+                    )
             };
+        }
+
+        public Dictionary<int, Dictionary<int, int>> GetMonthlyUniqueVisitorsByYear(DateTime startDate, DateTime endDate)
+        {
+            // Initialize result dictionary
+            var result = new Dictionary<int, Dictionary<int, int>>();
+
+            // Query database for page visits within the date range
+            var visits = _context.PageVisits
+                .Where(v => v.Timestamp >= startDate && v.Timestamp <= endDate)
+                .ToList();
+
+            // Group visits by year and month, then count unique visitors
+            var visitorsByYearMonth = visits
+                .GroupBy(v => new { Year = v.Timestamp.Year, Month = v.Timestamp.Month })
+                .Select(g => new
+                {
+                    g.Key.Year,
+                    g.Key.Month,
+                    Count = g.Select(v => v.VisitorId).Distinct().Count()
+                })
+                .ToList();
+
+            // Organize the data into the requested dictionary structure
+            foreach (var item in visitorsByYearMonth)
+            {
+                if (!result.ContainsKey(item.Year))
+                {
+                    result[item.Year] = new Dictionary<int, int>();
+                }
+
+                result[item.Year][item.Month] = item.Count;
+            }
+
+            return result;
+        }
+
+        public List<int> GetAvailableYears()
+        {
+            // Get distinct years from the PageVisits table
+            return _context.PageVisits
+                .Select(v => v.Timestamp.Year)
+                .Distinct()
+                .OrderBy(y => y)
+                .ToList();
         }
     }
 }

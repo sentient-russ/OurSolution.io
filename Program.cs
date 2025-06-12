@@ -160,8 +160,6 @@ builder.Services.AddMvc();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<StatsTracker>();
 builder.Services.AddScoped<IVisitorRepository, VisitorRepository>();
-builder.Services.AddHostedService<CdaConversionService>();
-builder.Services.AddSingleton<CdaConversionService>();
 var app = builder.Build();
 
 if (!app.Environment.IsDevelopment())

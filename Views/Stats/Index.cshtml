@@ -17,45 +17,235 @@
     <img src="~/img/stats.svg" style="height: 150px;" />
     <span class="page-heading">Stats</span>
 </div>
+<div class="stats-chart-wrapper">
+    <div class="unique-visitors-tbl">
 
-<div class="stats-table-wrapper">   
-    <table class="table-striped active-users-tbl">        
-        <thead>
-            <tr class="stats-heading">
-                <th class="stats-cell-left">
-                    IP Address
-                </th>
-                <th class="stats-cell-right">
-                    Last Active
-                </th>
-            </tr>
-        </thead>
-        <tbody id="tableBody">
-            @foreach (var user in Model)
-            {
-                <tr class="stats-row">
-                    <td class="stats-tbl-row">
-                        @HideFirstOctet(user.Key)
-                    </td>
-                    <td class="stats-tbl-row">                        
-                        @user.Value
-                    </td>
-                </tr>
-            }
-            <tr class="stats-tbl-row stats-total-txt">
-                <td class="stats-total-cell-left">
-
-                </td>
-                <td class="stats-total-cell-right">
-                    <span>
-                        Active Count: @ViewBag.UserCount
-                    </span>
-                </td>
-            </tr>
-        </tbody>
-    </table>
-    
+        <h3 class="stats-unique-visitors-heading">Monthly Unique Connected Devices</h3>
+        <div style="height: 400px;">
+            <canvas id="visitorsChart"></canvas>
+        </div>
+        <div class="mb-3">
+            <form method="get" class="d-flex flex-wrap align-items-center">
+                <div class="me-3 mb-2" style="margin-left: 10px;">
+                    <label class="stats-unique-visitors-bdy-txt me-2">Select from available years: </label>
+                    @foreach (var year in ViewBag.AvailableYears as List<int>)
+                    {
+                        <div class="form-check form-check-inline" style="margin-top: 10px;">
+                            <input class="form-check-input" type="checkbox" name="years" value="@year" id="year_@year"
+                                   @(((ViewBag.SelectedYears as List<int>)?.Contains(year) ?? false) ? "checked" : "")>
+                            <label class="form-check-label stats-unique-visitors-bdy-txt " for="year_@year">@year</label>
+                        </div>
+                    }
+                </div>
+                <div class="me-3 mb-2" style="margin-top: 10px;">
+                    <button type="submit" class="btn btn-sm mb-2 stats-update-btn">Update Chart</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 
+<div class="stats-table-wrapper">
+    <div class="table-container">
+        <table class="table-striped active-users-tbl">
+            <thead>
+                <tr class="stats-heading">
+                    <th class="stats-cell-left">
+                        IP Address
+                    </th>
+                    <th class="stats-cell-right">
+                        Last Active
+                    </th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                @foreach (var user in Model)
+                {
+                    <tr class="stats-row">
+                        <td class="stats-tbl-row">
+                            @HideFirstOctet(user.Key)
+                        </td>
+                        <td class="stats-tbl-row">
+                            @user.Value
+                        </td>
+                    </tr>
+                }
+                <tr class="stats-tbl-row stats-total-txt">
+                    <td class="stats-total-cell-left">
+                    </td>
+                    <td class="stats-total-cell-right">
+                        <span>
+                            Active Count: @ViewBag.UserCount
+                        </span>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
 
+<style>
+    /* Container for the table with border radius */
+    .table-container {
+        border-radius: 10px;
+        overflow: hidden;
+        border-collapse: separate;
+        border-spacing: 0;
+        background-color: #1E2429; /* Match your table's background */
+        box-shadow: 0 0 0 1px #1E2429; /* Creates a subtle border effect */
+    }
 
+    /* Reset any inherited border-collapse that might interfere */
+    .active-users-tbl {
+        border-collapse: separate;
+        border-spacing: 0;
+        width: 100%;
+    }
+
+    /* Make sure the header row has no gap with the container top */
+    .stats-heading {
+        margin-top: 0;
+    }
+
+    /* Ensure there are no borders between cells that would break the radius effect */
+    .stats-tbl-row,
+    .stats-cell-left,
+    .stats-cell-right,
+    .stats-total-cell-left,
+    .stats-total-cell-right {
+        border: none;
+    }
+
+    /* Ensure the striped rows don't overflow the container */
+    .stats-row:last-child td {
+        border-bottom: none;
+    }
+</style>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            const chartData = {
+                labels: monthNames,
+                datasets: []
+            };
+
+            // Get the visitor data from the ViewBag
+            const yearData = @Html.Raw(Json.Serialize(ViewBag.MonthlyVisitorData));
+
+            // Define colors - using #F7F9F9 for all lines with different opacities for distinction
+            const baseColor = '#F7F9F9';
+            const yearColors = {
+                backgroundColor: [
+                    `${baseColor}80`, // 50% opacity
+                    `${baseColor}A6`, // 65% opacity
+                    `${baseColor}CC`, // 80% opacity
+                    `${baseColor}F2`  // 95% opacity
+                ],
+                borderColor: [
+                    baseColor, // Full opacity for all borders
+                    baseColor,
+                    baseColor,
+                    baseColor
+                ]
+            };
+
+            // Process each year's data
+            if (yearData) {
+                const years = Object.keys(yearData).sort();
+                years.forEach((year, index) => {
+                    const colorIndex = index % 4;
+                    const monthlyData = yearData[year];
+
+                    // Create an array for all 12 months (filling in zeros for missing months)
+                    const dataArray = Array(12).fill(0);
+                    for (const month in monthlyData) {
+                        if (monthlyData.hasOwnProperty(month)) {
+                            dataArray[parseInt(month) - 1] = monthlyData[month];
+                        }
+                    }
+
+                    chartData.datasets.push({
+                        label: year,
+                        data: dataArray,
+                        backgroundColor: yearColors.backgroundColor[colorIndex],
+                        borderColor: yearColors.borderColor[colorIndex],
+                        borderWidth: 1
+                    });
+                });
+
+                // Set up the chart
+                const ctx = document.getElementById('visitorsChart').getContext('2d');
+
+                // Set chart background color to be dark
+                ctx.canvas.style.backgroundColor = '#1E2429';
+
+                const visitorsChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: chartData,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Unique Connections',
+                                    color: '#F7F9F9'
+                                },
+                                ticks: {
+                                    color: '#F7F9F9'
+                                },
+                                grid: {
+                                    color: 'rgba(247, 249, 249, 0.1)' // #F7F9F9 with low opacity
+                                }
+                            },
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Month',
+                                    color: '#F7F9F9'
+                                },
+                                ticks: {
+                                    color: '#F7F9F9'
+                                },
+                                grid: {
+                                    color: 'rgba(247, 249, 249, 0.1)' // #F7F9F9 with low opacity
+                                }
+                            }
+                        },
+                        plugins: {
+                            title: {
+                                display: false, // Removed since we have an h3 heading already
+                            },
+                            legend: {
+                                position: 'top',
+                                labels: {
+                                    color: '#F7F9F9'
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    title: function(tooltipItems) {
+                                        const item = tooltipItems[0];
+                                        const year = item.dataset.label;
+                                        const month = monthNames[item.dataIndex];
+                                        return `${month} ${year}`;
+                                    }
+                                },
+                                backgroundColor: 'rgba(30, 36, 41, 0.5)', // Dark background
+                                titleColor: '#F7F9F9',
+                                bodyColor: '#F7F9F9',
+                                borderColor: '#F7F9F9',
+                                borderWidth: 1
+                            }
+                        }
+                    }
+                });
+            }
+        });
+    </script>
+}

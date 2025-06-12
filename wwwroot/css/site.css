@@ -945,16 +945,55 @@ input:-webkit-autofill:focus {
     justify-content: center;
     text-align: center;
 }
+.stats-chart-wrapper {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    overflow: auto;
+    margin-top: 5px;
+    padding: 10px;
+}
+.unique-visitors-tbl {
+    display: flex;
+    flex-direction: column;
+    text-align: center;
+    border: 1px solid;
+    border-radius: 10px;
+    border-color: #ffffffa6;
+    background-color: #0d6efd15;
+    text-align: center;
+    padding: 10px;
+}
+.stats-unique-visitors-heading{
+    color: var(--dim-grey);
+    text-align: center;
+}
+.stats-unique-visitors-bdy-txt{
+    color: var(--dim-grey);
+}
+.stats-update-btn {
+    backdrop-filter: blur(5px) saturate(118%);
+    -webkit-backdrop-filter: blur(5px) saturate(118%);
+    background-color: rgba(255, 255, 255, 0.15);
+    border-radius: 6px 6px 6px 6px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    color: #e6e6e6;
+    height: 50px;
+    font-weight: 501;
+    font-size: 20px;
+    max-width: 200px;
+}
 .stats-table-wrapper {
     overflow: auto;
     margin-top: 5px;
     display: flex;
     justify-content: center;
 }
+
 .active-users-tbl {
     border: 1px solid;
     border-color: #ffffffa6;
-    width: 375px;
+    min-width: 375px;
     text-align: center;
 }
 .stats-cell-left{
