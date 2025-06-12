@@ -851,6 +851,21 @@ input:-webkit-autofill:focus {
 .notification-muted {
     color: #fba23d;
 }
+.fine-print-notification-container{
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    max-width: 375px;
+    text-align: left;
+    margin-left: auto;
+    margin-right: auto;
+
+}
+.fine-print-notification {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.25);
+    text-align: left !important;
+}
 .intro-message {
     display: flex;
     flex-direction: column;

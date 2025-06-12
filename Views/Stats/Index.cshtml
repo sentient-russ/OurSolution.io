@@ -17,10 +17,56 @@
     <img src="~/img/stats.svg" style="height: 150px;" />
     <span class="page-heading">Stats</span>
 </div>
+
 <div class="stats-chart-wrapper">
     <div class="unique-visitors-tbl">
+        <h3 class="stats-unique-visitors-heading">Currently Active Device Connections</h3>
+        <div class="stats-table-wrapper">
+            <div class="table-container">
+                <table class="table-striped active-users-tbl">
+                    <thead>
+                        <tr class="stats-heading">
+                            <th class="stats-cell-left">
+                                IP Address
+                            </th>
+                            <th class="stats-cell-right">
+                                Last Active
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        @foreach (var user in Model)
+                        {
+                            <tr class="stats-row">
+                                <td class="stats-tbl-row">
+                                    @HideFirstOctet(user.Key)
+                                </td>
+                                <td class="stats-tbl-row">
+                                    @user.Value
+                                </td>
+                            </tr>
+                        }
+                        <tr class="stats-tbl-row stats-total-txt">
+                            <td class="stats-total-cell-left">
+                            </td>
+                            <td class="stats-total-cell-right">
+                                <span>
+                                    Active Count: @ViewBag.UserCount
+                                </span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
 
-        <h3 class="stats-unique-visitors-heading">Monthly Unique Connected Devices</h3>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<div class="stats-chart-wrapper">
+    <div class="unique-visitors-tbl">
+        <h3 class="stats-unique-visitors-heading">Unique Devices Connections by Month</h3>
         <div style="height: 400px;">
             <canvas id="visitorsChart"></canvas>
         </div>
@@ -45,42 +91,14 @@
     </div>
 </div>
 
-<div class="stats-table-wrapper">
-    <div class="table-container">
-        <table class="table-striped active-users-tbl">
-            <thead>
-                <tr class="stats-heading">
-                    <th class="stats-cell-left">
-                        IP Address
-                    </th>
-                    <th class="stats-cell-right">
-                        Last Active
-                    </th>
-                </tr>
-            </thead>
-            <tbody id="tableBody">
-                @foreach (var user in Model)
-                {
-                    <tr class="stats-row">
-                        <td class="stats-tbl-row">
-                            @HideFirstOctet(user.Key)
-                        </td>
-                        <td class="stats-tbl-row">
-                            @user.Value
-                        </td>
-                    </tr>
-                }
-                <tr class="stats-tbl-row stats-total-txt">
-                    <td class="stats-total-cell-left">
-                    </td>
-                    <td class="stats-total-cell-right">
-                        <span>
-                            Active Count: @ViewBag.UserCount
-                        </span>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+<div class="stats-chart-wrapper">
+    <div class="unique-visitors-tbl">
+        <div class="fine-print-notification-container">
+            <p><span class="fine-print-notification">Notes:</span></p>
+            <p><span class="fine-print-notification">*Each IP address has its first octet masket to protect user privacy.</span></p>
+            <p><span class="fine-print-notification">*All user connection data is anonymized in the database.</span></p>
+            <p><span class="fine-print-notification">*Administrative accounts have their basic administrative activities logged in the system.</span></p>
+        </div>
     </div>
 </div>
 
