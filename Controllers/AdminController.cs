@@ -256,5 +256,202 @@ namespace os.Controllers
             speaker.UploadedBy = userDetails.Email;
             return View(speaker);
         }
+
+        [Authorize(Roles = "Administrator")]
+        [HttpGet]
+        public async Task<IActionResult> ViewAnnouncements()
+        {
+            List<AnnouncementModel> announcementList = new List<AnnouncementModel>();
+            announcementList = _dbConnectionService.GetAnnouncementList();
+            announcementList.Reverse();
+            return View(announcementList);
+        }
+
+
+        [Authorize(Roles = "Administrator")]
+        [HttpGet]
+        public IActionResult AddAnnouncement()
+        {
+            // Show empty form for new announcement
+            return View(new AnnouncementModel());
+        }
+
+        [Authorize(Roles = "Administrator")]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult AddAnnouncement(AnnouncementModel model)
+        {
+            if (ModelState.IsValid)
+            {
+                model.AnnouncementDate = DateTime.UtcNow;
+                model.Status = string.IsNullOrEmpty(model.Status) ? "Enabled" : model.Status;
+                var result = _dbConnectionService.AddAnnouncement(model);
+                if (result != null)
+                {
+                    return RedirectToAction(nameof(ViewAnnouncements));
+                }
+                ModelState.AddModelError("", "Failed to add announcement. Please try again.");
+            }
+            return View(model);
+        }
+
+
+        [Authorize(Roles = "Administrator")]
+        [HttpGet]
+        public IActionResult RemoveAnnouncement(int id)
+        {
+            // Optionally, fetch the announcement for confirmation
+            var announcement = _dbConnectionService.GetAnnouncementList().FirstOrDefault(a => a.Id == id);
+            if (announcement == null)
+            {
+                return NotFound();
+            }
+            return RemoveAnnouncementConfirmed(id);
+        }
+
+        [Authorize(Roles = "Administrator")]
+        [HttpPost, ActionName("RemoveAnnouncement")]
+        [ValidateAntiForgeryToken]
+        public IActionResult RemoveAnnouncementConfirmed(int id)
+        {
+            var announcements = _dbConnectionService.GetAnnouncementList();
+            var announcement = announcements.FirstOrDefault(a => a.Id == id);
+            if (announcement == null)
+            {
+                return NotFound();
+            }
+            var result = _dbConnectionService.DeleteAnnouncement(id);
+            if (result != null)
+            {
+                return RedirectToAction(nameof(ViewAnnouncements));
+            }
+            return View(announcement);
+        }
+
+        [Authorize(Roles = "Administrator")]
+        [HttpGet]
+        public IActionResult UpdateAnnouncement(int id)
+        {
+            var announcement = _dbConnectionService.GetAnnouncementList().FirstOrDefault(a => a.Id == id);
+            if (announcement == null)
+            {
+                return NotFound();
+            }
+            return View(announcement);
+        }
+
+        [Authorize(Roles = "Administrator")]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult UpdateAnnouncement(AnnouncementModel model)
+        {
+            if (ModelState.IsValid)
+            {
+                var result = _dbConnectionService.UpdateAnnouncement(model);
+                if (result != null)
+                {
+                    return RedirectToAction(nameof(ViewAnnouncements));
+                }
+                ModelState.AddModelError("", "Failed to update announcement. Please try again.");
+            }
+            return View(model);
+        }
+        [Authorize(Roles = "Administrator")]
+        [HttpGet]
+        public async Task<IActionResult> ViewMeetings()
+        {
+            List<MeetingModel> meetingList = new List<MeetingModel>();
+            meetingList = _dbConnectionService.GetMeetingList();
+            meetingList = meetingList.OrderBy(m => m.Weekday).ThenBy(m => m.StartTime).ToList();
+            return View(meetingList);
+        }
+
+        [Authorize(Roles = "Administrator")]
+        [HttpGet]
+        public IActionResult AddMeeting()
+        {
+            // Show empty form for new meeting
+            return View(new MeetingModel { Status = "Active" });
+        }
+
+        [Authorize(Roles = "Administrator")]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult AddMeeting(MeetingModel model)
+        {
+            if (ModelState.IsValid)
+            {
+                model.Status = string.IsNullOrEmpty(model.Status) ? "Active" : model.Status;
+                var result = _dbConnectionService.AddMeeting(model);
+                if (result != null)
+                {
+                    return RedirectToAction(nameof(ViewMeetings));
+                }
+                ModelState.AddModelError("", "Failed to add meeting. Please try again.");
+            }
+            return View(model);
+        }
+
+        [Authorize(Roles = "Administrator")]
+        [HttpGet]
+        public IActionResult RemoveMeeting(int id)
+        {
+            // Fetch the meeting for confirmation
+            var meeting = _dbConnectionService.GetMeetingList().FirstOrDefault(m => m.Id == id);
+            if (meeting == null)
+            {
+                return NotFound();
+            }
+            return RemoveMeetingConfirmed(id);
+        }
+
+        [Authorize(Roles = "Administrator")]
+        [HttpPost, ActionName("RemoveMeeting")]
+        [ValidateAntiForgeryToken]
+        public IActionResult RemoveMeetingConfirmed(int id)
+        {
+            var meetings = _dbConnectionService.GetMeetingList();
+            var meeting = meetings.FirstOrDefault(m => m.Id == id);
+            if (meeting == null)
+            {
+                return NotFound();
+            }
+            var result = _dbConnectionService.DeleteMeeting(id);
+            if (result != null)
+            {
+                return RedirectToAction(nameof(ViewMeetings));
+            }
+            return View(meeting);
+        }
+
+        [Authorize(Roles = "Administrator")]
+        [HttpGet]
+        public IActionResult UpdateMeeting(int id)
+        {
+            var meeting = _dbConnectionService.GetMeetingList().FirstOrDefault(m => m.Id == id);
+            if (meeting == null)
+            {
+                return NotFound();
+            }
+            return View(meeting);
+        }
+
+        [Authorize(Roles = "Administrator")]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult UpdateMeeting(MeetingModel model)
+        {
+            if (ModelState.IsValid)
+            {
+                var result = _dbConnectionService.UpdateMeeting(model);
+                if (result != null)
+                {
+                    return RedirectToAction(nameof(ViewMeetings));
+                }
+                ModelState.AddModelError("", "Failed to update meeting. Please try again.");
+            }
+            return View(model);
+        }
     }
+
 }

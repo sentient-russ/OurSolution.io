@@ -1,30 +1,64 @@
-﻿@model os.Controllers.HomeController
+﻿@model os.Models.HomeBundle
 @{
-    ViewData["Title"] = "Shared Member Login";
-}
+    ViewData["Title"] = "Shared Member Login";    
 
+    int sentinal = 0;
+    foreach (var anouncement in Model.AnnouncementList)
+    {
+        if (anouncement.Status == "Enabled")
+        {
+            sentinal++;
+        }
+    }
+}
 @if (ViewBag.StatusMessage != null)
 {
     <div class="alert alert-info">
         @ViewBag.StatusMessage
     </div>
 }
-
 <div class="logo-container">
     <center><span class="presentedby-txt">The Living in the Solution Group.</span></center>
     <center><span class="presentedby-txt">Atlanta, Ga.</span></center>
 </div>
-<div class="intro-message light-txt">
-    <p class="message-txt">A member-to-member shared password is required to access speaker recordings.</p>
-</div>
+
+@if(sentinal >= 1)
+{
+    <div class="container-column">
+        <div class="login-container-row">
+            <div class="login-container-column">
+                <section>
+                    <div class="announcement-div light-txt">
+                        @if (Model.AnnouncementList != null && Model.AnnouncementList.Count > 0)
+                        {
+                            <div class="alert-icon">
+                                <img src="~/img/information.svg" />
+                            </div>
+                            <p class="announcement-heading-txt">Special Announcement!</p>
+                            @foreach (var announcement in Model.AnnouncementList)
+                            {
+                                @if(announcement.Status == "Enabled"){
+                                <p class="announcement-txt" id="announcement-txt">@announcement.AnnouncementTxt </p>
+                                }
+                            }
+                        }
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
+}
+
 <div class="container-column">
     <div class="login-container-row">
         <div class="login-container-column">
             <section>
                 <form asp-controller="Home" asp-action="Index" method="post">
-                    <div class="login-logo light-txt">
-                        @* <img style="max-width:150px;" class="ai-logo" src="~/img/gcai_logo_light.png" /> *@
+                    <div class="login-logo light-txt-heading">
                         <center>@ViewData["Title"]</center>
+                    </div>
+                    <div class="password-message light-txt">
+                        <p class="message-txt">A member-to-member shared password is required to access speaker recordings.</p>
                     </div>
                     <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
                     <div class="form-floating mb-3" hidden>
@@ -44,50 +78,50 @@
             </section>
         </div>
     </div>
+    <div style="min-height: 1000px;">
+        <div class="light-txt margin-top-20" id="location_container">
+            <span class="heading-links">Meeting Locations</span><br>
+            <div class="location-text" id="location_text">
+                <span>Men who have a desire to stop drinking are welcome to join us.</span></br></br>
 
-    <div class="light-txt margin-top-20">
-        <span class="heading-links">Meeting Locations</span><br>
-        <div class="location-text hidden" id="location_text">           
-            Men who have a desire to stop drinking are welcome to join us.</br>
-            <div class="meeting-card-container">
-                <div class="meeting-card">
-                    <div>
-                        <span class="meeting-name">Living in the Solution</span><br>
-                        Saturday 9:00 AM – 10:00 AM EDT<br>
-                    </div>
-                    <a href="https://maps.app.goo.gl/TzY8UoXo7Hhga9e37" target="_blank">
-                        Saint Luke's Lutheran Church<br>
-                        3264 Northside Pkwy NW<br>
-                        Atlanta, GA 30327<br>
-                    </a>
-                </div>            
-            </div>
-            <div class="meeting-card-container">
-                <div class="meeting-card">
-                    <div>
-                        <span class="meeting-name">Living in the Solution North</span><br>
-                        Wednesday 7:00 PM – 8:00 PM EDT<br>
-                    </div>
-                    <div class="">
-                        <a href="https://maps.app.goo.gl/DxqguX3fGuGfLPdS7" target="_blank">
-                            Roswell United Methodist Church<br>
-                            814 Mimosa Blvd<br> 
-                            Roswell, GA 30075<br>
-                        </a>
-                    </div>
-                </div>
+                    @if (Model.MeetingList != null && Model.MeetingList.Count > 0)
+                    {
+                        foreach(var meeting in Model.MeetingList)
+                        {
+                            if(meeting.Status == "Active")
+                            {
+                                <div class="meeting-card-container">
+                                    <div class="meeting-card">
+                                        <div>
+                                            <span class="meeting-name">@meeting.MeetingName</span><br>
+                                            @meeting.Weekday @meeting.StartTime @meeting.StartTimeAMPM – @meeting.EndTime @meeting.EndTimeAMPM<br>
+                                        </div>
+                                        <div class="address-container">
+                                            <a href="@meeting.GoogleMapsLink" target="_blank">
+                                                @meeting.LocationName<br>
+                                                @meeting.StreetAddress<br>
+                                                @meeting.City, @meeting.State @meeting.Zip<br>
+                                            </a>
+                                        </div>
+                                    </div>            
+                                </div>
+                            }
+                        }
+                    }
+                    else
+                    {
+                        <p class="text-center">No meetings are currently scheduled.</p>
+                    }
             </div>
         </div>
-    </div>
-    <div class="light-txt">
-        <span class="heading-links">Helpful Links</span><br>
-        <div class="meeting-card-container">            
-             <div class=" " >
-                <div class="helpful-links-text helpful-links-card hidden" id="helpful_links_text">
+        <div class="light-txt margin-top-20" id="helpful_links_container">
+            <span class="heading-links">Helpful Links</span><br>
+            <div class="helpful-links-text" id="helpful_links_text">
+                <div class="helpful-links-card">
                     <a href="https://www.aa.org/aa-gso">AA General Service Office</a></br>
                     <a href="https://atlantaaa.org/">Atlanta Central Office</a> / <a href="https://atlantaaa.org/meetings/">Atlanta Area Meetings</a></br>
                     <a href="https://play.google.com/store/apps/details?id=com.bigbook3&hl=en_US">Everything AA App</a></br>
-                    <a href="https://www.recoveryspeakers.com/">RecoverySpeakers.com</a></br>
+                    <a href="https://www.recoveryspeakers.com/">RecoverySpeakers.com</a></br>                             
                 </div>
             </div>
         </div>

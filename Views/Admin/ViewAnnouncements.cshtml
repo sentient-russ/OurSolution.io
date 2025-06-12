@@ -1,0 +1,49 @@
+﻿@model IEnumerable<os.Models.AnnouncementModel>
+<div class="text-center">
+    <img src="~/img/edit_notifications.svg" style="min-height: 125px;" />
+</div>
+<h2 class="text-center mb-4 light-txt">Manage Announcements</h2>
+<div class="search-row">
+    <div class="search-colum-1">
+        <a class="btn btn-primary add-btn" asp-action="AddAnnouncement" role="button" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="Add a new announcement.">Add New</a>
+    </div>
+</div>
+<div class="table-wrapper">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>
+                    Announcement
+                </th>
+                <th>
+                    Creation Date
+                </th>
+                <th>
+                    Status
+                </th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody id="tableBody">
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.AnnouncementTxt)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.AnnouncementDate)
+                    </td>
+                    <td class="text-center">
+                        @Html.DisplayFor(modelItem => item.Status)
+                    </td>
+                    <td>
+                        <a class="btn btn-outline-primary-cust" asp-action="UpdateAnnouncement" asp-route-id="@item.Id" role="button" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="Edit announcement.">Edit</a>
+                        <a class="btn btn-outline-danger" style="" asp-action="RemoveAnnouncement" asp-route-id="@item.Id" role="button" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="Delete announcement.">Delete</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using os.Areas.Identity.Data;
 
@@ -11,9 +12,11 @@ using os.Areas.Identity.Data;
 namespace os.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250610131441_announcements")]
+    partial class announcements
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -284,7 +287,7 @@ namespace os.Migrations
                     b.Property<string>("AnnouncementTxt")
                         .HasColumnType("longtext");
 
-                    b.Property<string>("Status")
+                    b.Property<string>("status")
                         .HasColumnType("longtext");
 
                     b.HasKey("Id");
@@ -386,58 +389,6 @@ namespace os.Migrations
                     b.HasKey("EventId");
 
                     b.ToTable("SecurityLog", "Identity");
-                });
-
-            modelBuilder.Entity("os.Models.MeetingModel", b =>
-                {
-                    b.Property<int?>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int?>("Id"));
-
-                    b.Property<string>("City")
-                        .HasColumnType("longtext");
-
-                    b.Property<string>("EndTime")
-                        .HasColumnType("longtext");
-
-                    b.Property<string>("EndTimeAMPM")
-                        .HasColumnType("longtext");
-
-                    b.Property<string>("GoogleMapsLink")
-                        .HasColumnType("longtext");
-
-                    b.Property<string>("LocationName")
-                        .HasColumnType("longtext");
-
-                    b.Property<string>("MeetingName")
-                        .HasColumnType("longtext");
-
-                    b.Property<string>("StartTime")
-                        .HasColumnType("longtext");
-
-                    b.Property<string>("StartTimeAMPM")
-                        .HasColumnType("longtext");
-
-                    b.Property<string>("State")
-                        .HasColumnType("longtext");
-
-                    b.Property<string>("Status")
-                        .HasColumnType("longtext");
-
-                    b.Property<string>("StreetAddress")
-                        .HasColumnType("longtext");
-
-                    b.Property<string>("Weekday")
-                        .HasColumnType("longtext");
-
-                    b.Property<string>("Zip")
-                        .HasColumnType("longtext");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Meetings", "Identity");
                 });
 
             modelBuilder.Entity("os.Models.SpeakerModel", b =>

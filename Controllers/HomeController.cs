@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using os.Models; // Replace with your actual namespace
 using os.Areas.Identity.Data;
 using System.Threading.Tasks;
+using os.Services;
 
 namespace os.Controllers
 {
@@ -10,17 +11,31 @@ namespace os.Controllers
     {
         private readonly SignInManager<AppUser> _signInManager;
         private readonly UserManager<AppUser> _userManager;
+        private readonly DbConnectionService _dbConnectionService;
 
-        public HomeController(SignInManager<AppUser> signInManager, UserManager<AppUser> userManager)
+        public HomeController(SignInManager<AppUser> signInManager,
+            UserManager<AppUser> userManager,
+            DbConnectionService dbConnectionService)
         {
             _signInManager = signInManager;
             _userManager = userManager;
+            _dbConnectionService = dbConnectionService;
         }
 
         [HttpGet]
         public IActionResult Index()
         {
-            return View();
+            HomeBundle homeBundle = new HomeBundle();
+
+            // Get announcements
+            List<AnnouncementModel> announcementList = _dbConnectionService.GetAnnouncementList();
+            homeBundle.AnnouncementList = announcementList;
+
+            // Get meetings
+            List<MeetingModel> meetingList = _dbConnectionService.GetMeetingList();
+            homeBundle.MeetingList = meetingList.Where(m => m.Status == "Active").OrderBy(m => m.Weekday).ThenBy(m => m.StartTime).ToList();
+
+            return View(homeBundle);
         }
 
         [HttpGet]
@@ -86,7 +101,7 @@ namespace os.Controllers
             return View();
         }
 
-            public IActionResult Privacy()
+        public IActionResult Privacy()
         {
             return View();
         }

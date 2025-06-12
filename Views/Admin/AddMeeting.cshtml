@@ -1,0 +1,140 @@
+﻿@model os.Models.MeetingModel
+
+<div class="text-center">
+    <img src="~/img/meeting_schedule.svg" style="min-height: 125px;" />
+</div>
+<h2 class="text-center mb-4 light-txt">Add New Meeting</h2>
+<div class="search-row">
+    <div class="search-colum-1">
+        <!-- Intentionally left blank for layout consistency -->
+    </div>
+</div>
+<div class="table-wrapper">
+    <form asp-action="AddMeeting" method="post" autocomplete="off">
+        <table class="table table-striped">
+            <tbody>
+                <tr>
+                    <td>
+                        <label asp-for="MeetingName" class="form-label">Meeting Name</label>
+                        <input asp-for="MeetingName" class="form-control" />
+                        <span asp-validation-for="MeetingName" class="text-danger"></span>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <label asp-for="LocationName" class="form-label">Location Name (i.e. Church Name)</label>
+                        <input asp-for="LocationName" class="form-control" />
+                        <span asp-validation-for="LocationName" class="text-danger"></span>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <div class="row">
+                            <div class="col">
+                                <label asp-for="Weekday" class="form-label">Day of Week</label>
+                                <select asp-for="Weekday" class="form-control">
+                                    <option value="Monday">Monday</option>
+                                    <option value="Tuesday">Tuesday</option>
+                                    <option value="Wednesday">Wednesday</option>
+                                    <option value="Thursday">Thursday</option>
+                                    <option value="Friday">Friday</option>
+                                    <option value="Saturday">Saturday</option>
+                                    <option value="Sunday">Sunday</option>
+                                </select>
+                                <span asp-validation-for="Weekday" class="text-danger"></span>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <label asp-for="StartTime" class="form-label">Start Time</label>
+                                <input asp-for="StartTime" class="form-control" placeholder="e.g. 7:00" />
+                                <span asp-validation-for="StartTime" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-2">
+                                <label asp-for="StartTimeAMPM" class="form-label">AM/PM</label>
+                                <select asp-for="StartTimeAMPM" class="form-control">
+                                    <option value="AM">AM</option>
+                                    <option value="PM">PM</option>
+                                </select>
+                                <span asp-validation-for="StartTimeAMPM" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="EndTime" class="form-label">End Time</label>
+                                <input asp-for="EndTime" class="form-control" placeholder="e.g. 8:00" />
+                                <span asp-validation-for="EndTime" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-2">
+                                <label asp-for="EndTimeAMPM" class="form-label">AM/PM</label>
+                                <select asp-for="EndTimeAMPM" class="form-control">
+                                    <option value="AM">AM</option>
+                                    <option value="PM">PM</option>
+                                </select>
+                                <span asp-validation-for="EndTimeAMPM" class="text-danger"></span>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <label asp-for="StreetAddress" class="form-label">Street Address</label>
+                        <input asp-for="StreetAddress" class="form-control" />
+                        <span asp-validation-for="StreetAddress" class="text-danger"></span>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label asp-for="City" class="form-label">City</label>
+                                <input asp-for="City" class="form-control" />
+                                <span asp-validation-for="City" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-3">
+                                <label asp-for="State" class="form-label">State</label>
+                                <input asp-for="State" class="form-control" maxlength="2" />
+                                <span asp-validation-for="State" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-3">
+                                <label asp-for="Zip" class="form-label">Zip Code</label>
+                                <input asp-for="Zip" class="form-control" />
+                                <span asp-validation-for="Zip" class="text-danger"></span>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <label asp-for="Status" class="form-label">Status</label>
+                        <select asp-for="Status" class="form-control">
+                            <option value="Active">Active</option>
+                            <option value="Inactive">Inactive</option>
+                        </select>
+                        <span asp-validation-for="Status" class="text-danger"></span>
+                    </td>
+                </tr>
+                <td>
+                    <label asp-for="GoogleMapsLink" class="form-label">Google Maps Link</label>
+                    <input asp-for="GoogleMapsLink" class="form-control" />
+                    <span asp-validation-for="GoogleMapsLink" class="text-danger"></span>
+                </td>
+                </tr>
+                <tr>
+                    <td>
+                        <button type="submit" class="btn btn-secondary cust-btn">Add Meeting</button>
+                        <a asp-action="ViewMeetings" class="btn btn-secondary cust-btn">Cancel</a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </form>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

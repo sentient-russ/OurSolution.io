@@ -1,0 +1,142 @@
+﻿@model os.Models.MeetingModel
+
+<div class="text-center">
+    <img src="~/img/calendar_clock.svg" style="min-height: 125px;" />
+</div>
+<h2 class="text-center mb-4 light-txt">Edit Meeting</h2>
+<div class="search-row">
+    <div class="search-colum-1">
+        <!-- Intentionally left blank for layout consistency -->
+    </div>
+</div>
+<div class="table-wrapper tbl-alighnment">
+    <form asp-action="UpdateMeeting" method="post" autocomplete="off">
+        <input type="hidden" asp-for="Id" />
+        <table class="table table-striped">
+            <tbody>
+                <tr>
+                    <td>
+                        <label asp-for="MeetingName" class="form-label">Meeting Name</label>
+                        <input asp-for="MeetingName" class="form-control" />
+                        <span asp-validation-for="MeetingName" class="text-danger"></span>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <label asp-for="LocationName" class="form-label">Location Name (i.e. Church Name)</label>
+                        <input asp-for="LocationName" class="form-control" />
+                        <span asp-validation-for="LocationName" class="text-danger"></span>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <div class="row">
+                            <div class="col">
+                                <label asp-for="Weekday" class="form-label">Day of Week</label>
+                                <select asp-for="Weekday" class="form-control">
+                                    <option value="Monday" selected="@(Model.Weekday == "Monday" ? "selected" : null)">Monday</option>
+                                    <option value="Tuesday" selected="@(Model.Weekday == "Tuesday" ? "selected" : null)">Tuesday</option>
+                                    <option value="Wednesday" selected="@(Model.Weekday == "Wednesday" ? "selected" : null)">Wednesday</option>
+                                    <option value="Thursday" selected="@(Model.Weekday == "Thursday" ? "selected" : null)">Thursday</option>
+                                    <option value="Friday" selected="@(Model.Weekday == "Friday" ? "selected" : null)">Friday</option>
+                                    <option value="Saturday" selected="@(Model.Weekday == "Saturday" ? "selected" : null)">Saturday</option>
+                                    <option value="Sunday" selected="@(Model.Weekday == "Sunday" ? "selected" : null)">Sunday</option>
+                                </select>
+                                <span asp-validation-for="Weekday" class="text-danger"></span>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <label asp-for="StartTime" class="form-label">Start Time</label>
+                                <input asp-for="StartTime" class="form-control" placeholder="e.g. 7:00" />
+                                <span asp-validation-for="StartTime" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-2">
+                                <label asp-for="StartTimeAMPM" class="form-label">AM/PM</label>
+                                <select asp-for="StartTimeAMPM" class="form-control">
+                                    <option value="AM" selected="@(Model.StartTimeAMPM == "AM" ? "selected" : null)">AM</option>
+                                    <option value="PM" selected="@(Model.StartTimeAMPM == "PM" ? "selected" : null)">PM</option>
+                                </select>
+                                <span asp-validation-for="StartTimeAMPM" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="EndTime" class="form-label">End Time</label>
+                                <input asp-for="EndTime" class="form-control" placeholder="e.g. 8:00" />
+                                <span asp-validation-for="EndTime" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-2">
+                                <label asp-for="EndTimeAMPM" class="form-label">AM/PM</label>
+                                <select asp-for="EndTimeAMPM" class="form-control">
+                                    <option value="AM" selected="@(Model.EndTimeAMPM == "AM" ? "selected" : null)">AM</option>
+                                    <option value="PM" selected="@(Model.EndTimeAMPM == "PM" ? "selected" : null)">PM</option>
+                                </select>
+                                <span asp-validation-for="EndTimeAMPM" class="text-danger"></span>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <label asp-for="StreetAddress" class="form-label">Street Address</label>
+                        <input asp-for="StreetAddress" class="form-control" />
+                        <span asp-validation-for="StreetAddress" class="text-danger"></span>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label asp-for="City" class="form-label">City</label>
+                                <input asp-for="City" class="form-control" />
+                                <span asp-validation-for="City" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-3">
+                                <label asp-for="State" class="form-label">State</label>
+                                <input asp-for="State" class="form-control" maxlength="2" />
+                                <span asp-validation-for="State" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-3">
+                                <label asp-for="Zip" class="form-label">Zip Code</label>
+                                <input asp-for="Zip" class="form-control" />
+                                <span asp-validation-for="Zip" class="text-danger"></span>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <label asp-for="Status" class="form-label">Status</label>
+                        <select asp-for="Status" class="form-control">
+                            <option value="Active" selected="@(Model.Status == "Active" ? "selected" : null)">Active</option>
+                            <option value="Inactive" selected="@(Model.Status == "Inactive" ? "selected" : null)">Inactive</option>
+                        </select>
+                        <span asp-validation-for="Status" class="text-danger"></span>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <label asp-for="GoogleMapsLink" class="form-label">GoogleMapsLink</label>
+                        <input asp-for="GoogleMapsLink" class="form-control" />
+                        <span asp-validation-for="GoogleMapsLink" class="text-danger"></span>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <button type="submit" class="btn btn-secondary cust-btn me-2">Update Meeting</button>
+                        <a asp-action="ViewMeetings" class="btn btn-secondary cust-btn">Cancel</a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </form>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

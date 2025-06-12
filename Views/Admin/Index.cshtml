@@ -18,16 +18,14 @@
     <p>Welcome @(User?.Identity?.IsAuthenticated == true ? UserManager.GetUserName(User) : "").</p>
     <p>Your current role is: @role</p>
 </div>
-
-
 <div class="outer-container">
-    <div class="container-row">
+    <div class="admin-button-grid">
         <div class="btn-container">
             <div class="btn-row">
                 <a class="nav-link" asp-controller="Admin" asp-action="ViewSpeakers" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="Redirects to manage speakers page."><img class="btn-img" width="150" src="~/img/speakers.svg" /></a>
             </div>
             <div class="btn-row">
-                <span class="btn-label light-txt">Manage Speakers</span>
+                <span class="btn-label light-txt">Speakers</span>
             </div>
         </div>
         <div class="btn-container">
@@ -35,7 +33,23 @@
                 <a class="nav-link" asp-controller="Admin" asp-action="ManageAccounts" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="Redirect to the manage users page."><img class="btn-img" width="150" src="~/img/group.svg" /></a>
             </div>
             <div class="btn-row">
-                <span class="btn-label light-txt">Manage Users</span>
+                <span class="btn-label light-txt">Users</span>
+            </div>
+        </div>
+        <div class="btn-container">
+            <div class="btn-row">
+                <a class="nav-link" asp-controller="Admin" asp-action="ViewAnnouncements" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="Redirects to view/edit announcements page."><img class="btn-img" width="150" src="~/img/edit_notifications.svg" /></a>
+            </div>
+            <div class="btn-row">
+                <span class="btn-label light-txt">Announcements</span>
+            </div>
+        </div>
+        <div class="btn-container">
+            <div class="btn-row">
+                <a class="nav-link" asp-controller="Admin" asp-action="ViewMeetings" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="Redirects to view/edit meetings page."><img class="btn-img" width="150" src="~/img/calendar_clock.svg" /></a>
+            </div>
+            <div class="btn-row">
+                <span class="btn-label light-txt">Meetings</span>
             </div>
         </div>
         <div class="btn-container">

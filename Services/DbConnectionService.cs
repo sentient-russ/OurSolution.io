@@ -4,6 +4,8 @@ using os.Areas.Identity.Data;
 using MySql.Data.MySqlClient;
 using System.Security.Claims;
 using MySqlX.XDevAPI.CRUD;
+using System.Net;
+using Microsoft.EntityFrameworkCore;
 
 namespace os.Services
 {
@@ -145,7 +147,7 @@ namespace os.Services
                 Console.WriteLine(ex.ToString());
             }
 
-           List<SpeakerModel> publicSpeakers = new List<SpeakerModel>();
+            List<SpeakerModel> publicSpeakers = new List<SpeakerModel>();
             foreach (SpeakerModel speaker in foundSpeakers)
             {
                 if (speaker.Visibility == "Universal" && speaker.SpeakerStatus == "Active")
@@ -162,9 +164,9 @@ namespace os.Services
         {
             List<SpeakerModel> speakers = GetSpeakersList();
             SpeakerModel foundSpeaker = new SpeakerModel();
-            foreach(SpeakerModel speaker in speakers)
+            foreach (SpeakerModel speaker in speakers)
             {
-                if(speaker.SpeakerId == id) { foundSpeaker = speaker; break; }
+                if (speaker.SpeakerId == id) { foundSpeaker = speaker; break; }
             }
             return foundSpeaker;
 
@@ -190,7 +192,9 @@ namespace os.Services
             if (previouseSpeakerModel.SpeakerId == 0)
             {
                 beforeUpdate = "No previous record";
-            } else {
+            }
+            else
+            {
                 beforeUpdate = SpeakerDetailsString(previouseSpeakerModel);
             }
             string afterUpdate = SpeakerDetailsString(speakerIn);
@@ -236,7 +240,7 @@ namespace os.Services
             string afterUpdate = SpeakerDetailsString(speakerIn);
             CreateLog(email, "AddSpeaker() called.", beforeUpdate, afterUpdate);
             bool Succeeded = false;
-            
+
             try
             {
                 using var conn1 = new MySqlConnection(Environment.GetEnvironmentVariable("DbConnectionString"));
@@ -348,17 +352,22 @@ namespace os.Services
                 DeleteUserRole(userIn.Id);
                 AssignUserRole(userIn.Id, userIn.UserRole);
                 // ensure admin and shared accounts remain intact
-                if(userIn.Email.ToLower() == "admin@oursolution.io") {
+                if (userIn.Email.ToLower() == "admin@oursolution.io")
+                {
                     cmd1.Parameters.AddWithValue("@ActiveStatus", "Active");
                     cmd1.Parameters.AddWithValue("@UserRole", "Administrator");
-                } else if (userIn.Email.ToLower() == "shareduser@oursolution.io") {
+                }
+                else if (userIn.Email.ToLower() == "shareduser@oursolution.io")
+                {
                     cmd1.Parameters.AddWithValue("@ActiveStatus", "Active");
                     cmd1.Parameters.AddWithValue("@UserRole", "Member");
-                } else {
+                }
+                else
+                {
                     cmd1.Parameters.AddWithValue("@UserRole", userIn.UserRole);
                     cmd1.Parameters.AddWithValue("@ActiveStatus", userIn.ActiveStatus);
                 }
-                if(userIn.ActiveStatus == "Active")
+                if (userIn.ActiveStatus == "Active")
                 {
                     cmd1.Parameters.AddWithValue("EmailConfirmed", 1);
                 }
@@ -404,7 +413,8 @@ namespace os.Services
         {
             //get role id from role name
             string newRoleId = GetRoleId(uRoleIn);
-            if (UserRolePresent(uidIn)){
+            if (UserRolePresent(uidIn))
+            {
                 try
                 {
                     using var conn1 = new MySqlConnection(Environment.GetEnvironmentVariable("DbConnectionString"));
@@ -415,13 +425,14 @@ namespace os.Services
                     cmd1.Parameters.AddWithValue("@RoleId", newRoleId);
                     cmd1.ExecuteNonQuery();
                     conn1.Close();
-                    
+
                 }
                 catch (Exception ex)
                 {
                     Console.WriteLine(ex.ToString());
                 }
-            } else
+            }
+            else
             {
                 try
                 {
@@ -451,7 +462,7 @@ namespace os.Services
             try
             {
                 using var conn1 = new MySqlConnection(Environment.GetEnvironmentVariable("DbConnectionString"));
-                string command = "SELECT * FROM os.UserRoles WHERE UserId = @UserId;";                
+                string command = "SELECT * FROM os.UserRoles WHERE UserId = @UserId;";
                 conn1.Open();
                 MySqlCommand cmd1 = new MySqlCommand(command, conn1);
                 cmd1.Parameters.AddWithValue("@UserId", uidIn);
@@ -635,9 +646,9 @@ namespace os.Services
             }
             return foundUser;
         }
-       /*
-        * creates an event log
-        */
+        /*
+         * creates an event log
+         */
         public void CreateLog(string userIdIn, string descriptionIn, string changedFromIn, string changedToIn)
         {
 
@@ -649,9 +660,9 @@ namespace os.Services
             newLog.ChangedTo = changedToIn;
             AddLog(newLog);
         }
-       /*
-        * Adds a single log to the db
-        */
+        /*
+         * Adds a single log to the db
+         */
         public void AddLog(LogModel logIn)
         {
             try
@@ -675,9 +686,9 @@ namespace os.Services
                 Console.WriteLine(ex.ToString());
             }
         }
-       /*
-        * Gets a list of the logs account based on its name
-        */
+        /*
+         * Gets a list of the logs account based on its name
+         */
         public List<LogModel> GetLogs()
         {
             List<LogModel> logs = new List<LogModel>();
@@ -709,5 +720,235 @@ namespace os.Services
             }
             return logs;
         }
+        /*
+        * Gets a list of the announcements
+        */
+        public List<AnnouncementModel> GetAnnouncementList()
+        {
+            List<AnnouncementModel> announcements = new List<AnnouncementModel>();
+            try
+            {
+                using var conn1 = new MySqlConnection(Environment.GetEnvironmentVariable("DbConnectionString"));
+                string command = "SELECT * FROM os.Announcements";
+                conn1.Open();
+                MySqlCommand cmd1 = new MySqlCommand(command, conn1);
+                MySqlDataReader reader1 = cmd1.ExecuteReader();
+                while (reader1.Read())
+                {
+                    AnnouncementModel announcement = new AnnouncementModel();
+                    announcement.Id = reader1.IsDBNull(0) ? null : reader1.GetInt32(0);
+                    announcement.AnnouncementTxt = reader1.IsDBNull(1) ? null : reader1.GetString(1);
+                    announcement.AnnouncementDate = reader1.IsDBNull(2) ? null : reader1.GetDateTime(2);
+                    announcement.Status = reader1.IsDBNull(3) ? null : reader1.GetString(3);
+                    announcements.Add(announcement);
+                }
+                reader1.Close();
+                conn1.Close();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+            }
+            return announcements;
+        }
+        public List<AnnouncementModel> AddAnnouncement(AnnouncementModel newAnnouncement)
+        {
+            List<AnnouncementModel> announcements = new List<AnnouncementModel>();
+            try
+            {
+                using var conn1 = new MySqlConnection(Environment.GetEnvironmentVariable("DbConnectionString"));
+                string command = "INSERT INTO os.Announcements (AnnouncementTxt, AnnouncementDate, Status) " +
+                    "VALUES (@AnnouncementTxt, @AnnouncementDate, @Status)";
+                conn1.Open();
+                MySqlCommand cmd1 = new MySqlCommand(command, conn1);
+                cmd1.Parameters.AddWithValue("@AnnouncementTxt", newAnnouncement.AnnouncementTxt);
+                cmd1.Parameters.AddWithValue("@AnnouncementDate", DateTime.Now);
+                cmd1.Parameters.AddWithValue("@Status", newAnnouncement.Status);
+                MySqlDataReader reader1 = cmd1.ExecuteReader();
+                reader1.Close();
+                conn1.Close();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+            }
+            return announcements;
+        }
+        public List<AnnouncementModel> UpdateAnnouncement(AnnouncementModel updatedAnnouncement)
+        {
+            try
+            {
+                using var conn = new MySqlConnection(Environment.GetEnvironmentVariable("DbConnectionString"));
+                string command = "UPDATE os.Announcements SET AnnouncementTxt = @AnnouncementTxt, AnnouncementDate = @AnnouncementDate, Status = @Status WHERE Id = @Id";
+                conn.Open();
+                MySqlCommand cmd = new MySqlCommand(command, conn);
+                cmd.Parameters.AddWithValue("@Id", updatedAnnouncement.Id);
+                cmd.Parameters.AddWithValue("@AnnouncementTxt", updatedAnnouncement.AnnouncementTxt);
+                cmd.Parameters.AddWithValue("@AnnouncementDate", updatedAnnouncement.AnnouncementDate ?? DateTime.Now);
+                cmd.Parameters.AddWithValue("@Status", updatedAnnouncement.Status);
+
+                int rowsAffected = cmd.ExecuteNonQuery();
+                conn.Close();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+            }
+            return GetAnnouncementList();
+        }
+        public List<AnnouncementModel> DeleteAnnouncement(int announcementId)
+        {
+            List<AnnouncementModel> announcements = new List<AnnouncementModel>();
+            try
+            {
+                using var conn1 = new MySqlConnection(Environment.GetEnvironmentVariable("DbConnectionString"));
+                string command = "DELETE FROM os.Announcements WHERE Id = @Id";
+                conn1.Open();
+                MySqlCommand cmd1 = new MySqlCommand(command, conn1);
+                cmd1.Parameters.AddWithValue("@Id", announcementId);
+                MySqlDataReader reader1 = cmd1.ExecuteReader();
+                reader1.Close();
+                conn1.Close();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+            }
+            return GetAnnouncementList();
+        }
+        /*
+* Gets a list of all meetings
+*/
+        public List<MeetingModel> GetMeetingList()
+        {
+            List<MeetingModel> meetings = new List<MeetingModel>();
+            try
+            {
+                using var conn = new MySqlConnection(Environment.GetEnvironmentVariable("DbConnectionString"));
+                string command = "SELECT * FROM os.Meetings";
+                conn.Open();
+                MySqlCommand cmd = new MySqlCommand(command, conn);
+                MySqlDataReader reader = cmd.ExecuteReader();
+                while (reader.Read())
+                {
+                    MeetingModel meeting = new MeetingModel();
+                    meeting.Id = reader.IsDBNull(0) ? null : reader.GetInt32(0);
+                    meeting.MeetingName = reader.IsDBNull(1) ? null : reader.GetString(1);
+                    meeting.Weekday = reader.IsDBNull(2) ? null : reader.GetString(2);
+                    meeting.StartTime = reader.IsDBNull(3) ? null : reader.GetString(3);
+                    meeting.StartTimeAMPM = reader.IsDBNull(4) ? null : reader.GetString(4);
+                    meeting.EndTime = reader.IsDBNull(5) ? null : reader.GetString(5);
+                    meeting.EndTimeAMPM = reader.IsDBNull(6) ? null : reader.GetString(6);
+                    meeting.StreetAddress = reader.IsDBNull(7) ? null : reader.GetString(7);
+                    meeting.City = reader.IsDBNull(8) ? null : reader.GetString(8);
+                    meeting.State = reader.IsDBNull(9) ? null : reader.GetString(9);
+                    meeting.Zip = reader.IsDBNull(10) ? null : reader.GetString(10);
+                    meeting.Status = reader.IsDBNull(11) ? null : reader.GetString(11);
+                    meeting.GoogleMapsLink = reader.IsDBNull(12) ? null : reader.GetString(12);
+                    meeting.LocationName = reader.IsDBNull(13) ? null : reader.GetString(13);
+                    meetings.Add(meeting);
+                }
+                reader.Close();
+                conn.Close();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+            }
+            return meetings;
+        }
+
+        public List<MeetingModel> AddMeeting(MeetingModel newMeeting)
+        {
+            List<MeetingModel> meetings = new List<MeetingModel>();
+            try
+            {
+                using var conn = new MySqlConnection(Environment.GetEnvironmentVariable("DbConnectionString"));
+                string command = "INSERT INTO os.Meetings (MeetingName, Weekday, StartTime, StartTimeAMPM, EndTime, EndTimeAMPM, StreetAddress, City, State, Zip, Status, GoogleMapsLink, LocationName) " +
+                    "VALUES (@MeetingName, @Weekday, @StartTime, @StartTimeAMPM, @EndTime, @EndTimeAMPM, @StreetAddress, @City, @State, @Zip, @Status, @GoogleMapsLink, @LocationName)";
+                conn.Open();
+                MySqlCommand cmd = new MySqlCommand(command, conn);
+                cmd.Parameters.AddWithValue("@MeetingName", newMeeting.MeetingName);
+                cmd.Parameters.AddWithValue("@Weekday", newMeeting.Weekday);
+                cmd.Parameters.AddWithValue("@StartTime", newMeeting.StartTime);
+                cmd.Parameters.AddWithValue("@StartTimeAMPM", newMeeting.StartTimeAMPM);
+                cmd.Parameters.AddWithValue("@EndTime", newMeeting.EndTime);
+                cmd.Parameters.AddWithValue("@EndTimeAMPM", newMeeting.EndTimeAMPM);
+                cmd.Parameters.AddWithValue("@StreetAddress", newMeeting.StreetAddress);
+                cmd.Parameters.AddWithValue("@City", newMeeting.City);
+                cmd.Parameters.AddWithValue("@State", newMeeting.State);
+                cmd.Parameters.AddWithValue("@Zip", newMeeting.Zip);
+                cmd.Parameters.AddWithValue("@Status", newMeeting.Status);
+                cmd.Parameters.AddWithValue("GoogleMapsLink", newMeeting.GoogleMapsLink);
+                cmd.Parameters.AddWithValue("LocationName", newMeeting.LocationName);
+
+                MySqlDataReader reader = cmd.ExecuteReader();
+                reader.Close();
+                conn.Close();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+            }
+            return meetings;
+        }
+
+        public List<MeetingModel> UpdateMeeting(MeetingModel updatedMeeting)
+        {
+            List<MeetingModel> meetings = new List<MeetingModel>();
+            try
+            {
+                using var conn = new MySqlConnection(Environment.GetEnvironmentVariable("DbConnectionString"));
+                string command = "UPDATE os.Meetings SET MeetingName = @MeetingName, Weekday = @Weekday, StartTime = @StartTime, " +
+                    "StartTimeAMPM = @StartTimeAMPM, EndTime = @EndTime, EndTimeAMPM = @EndTimeAMPM, StreetAddress = @StreetAddress, " +
+                    "City = @City, State = @State, Zip = @Zip, Status = @Status, GoogleMapsLink = @GoogleMapsLink, LocationName = @LocationName WHERE Id = @Id";
+                conn.Open();
+                MySqlCommand cmd = new MySqlCommand(command, conn);
+                cmd.Parameters.AddWithValue("@Id", updatedMeeting.Id);
+                cmd.Parameters.AddWithValue("@MeetingName", updatedMeeting.MeetingName);
+                cmd.Parameters.AddWithValue("@Weekday", updatedMeeting.Weekday);
+                cmd.Parameters.AddWithValue("@StartTime", updatedMeeting.StartTime);
+                cmd.Parameters.AddWithValue("@StartTimeAMPM", updatedMeeting.StartTimeAMPM);
+                cmd.Parameters.AddWithValue("@EndTime", updatedMeeting.EndTime);
+                cmd.Parameters.AddWithValue("@EndTimeAMPM", updatedMeeting.EndTimeAMPM);
+                cmd.Parameters.AddWithValue("@StreetAddress", updatedMeeting.StreetAddress);
+                cmd.Parameters.AddWithValue("@City", updatedMeeting.City);
+                cmd.Parameters.AddWithValue("@State", updatedMeeting.State);
+                cmd.Parameters.AddWithValue("@Zip", updatedMeeting.Zip);
+                cmd.Parameters.AddWithValue("@Status", updatedMeeting.Status);
+                cmd.Parameters.AddWithValue("@GoogleMapsLink", updatedMeeting.GoogleMapsLink);
+                cmd.Parameters.AddWithValue("@LocationName", updatedMeeting.LocationName);
+                MySqlDataReader reader = cmd.ExecuteReader();
+                reader.Close();
+                conn.Close();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+            }
+            return meetings;
+        }
+
+        public List<MeetingModel> DeleteMeeting(int id)
+        {
+            List<MeetingModel> meetings = new List<MeetingModel>();
+            try
+            {
+                using var conn = new MySqlConnection(Environment.GetEnvironmentVariable("DbConnectionString"));
+                string command = "DELETE FROM os.Meetings WHERE Id = @Id";
+                conn.Open();
+                MySqlCommand cmd = new MySqlCommand(command, conn);
+                cmd.Parameters.AddWithValue("@Id", id);
+                MySqlDataReader reader = cmd.ExecuteReader();
+                reader.Close();
+                conn.Close();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+            }
+            return meetings;
+        }
     }
+
 }

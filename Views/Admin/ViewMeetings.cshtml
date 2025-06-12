@@ -1,0 +1,54 @@
+﻿@model IEnumerable<os.Models.MeetingModel>
+<div class="text-center">
+    <img src="~/img/calendar_clock.svg" style="min-height: 125px;" />
+</div>
+<h2 class="text-center mb-4 light-txt">Manage Meetings</h2>
+<div class="search-row">
+    <div class="search-colum-1">
+        <a class="btn btn-primary add-btn" asp-action="AddMeeting" role="button" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="Add a new meeting.">Add New</a>
+    </div>
+</div>
+<div class="table-wrapper">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>
+                    Meeting Name
+                </th>
+                <th>
+                    Day & Time
+                </th>
+                <th>
+                    Location
+                </th>
+                <th>
+                    Status
+                </th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody id="tableBody">
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.MeetingName)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.Weekday), @Html.DisplayFor(modelItem => item.StartTime)@Html.DisplayFor(modelItem => item.StartTimeAMPM) - @Html.DisplayFor(modelItem => item.EndTime)@Html.DisplayFor(modelItem => item.EndTimeAMPM)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.StreetAddress), @Html.DisplayFor(modelItem => item.City), @Html.DisplayFor(modelItem => item.State) @Html.DisplayFor(modelItem => item.Zip)
+                    </td>
+                    <td class="text-center">
+                        @Html.DisplayFor(modelItem => item.Status)
+                    </td>
+                    <td>
+                        <a class="btn btn-outline-primary" asp-action="UpdateMeeting" asp-route-id="@item.Id" role="button" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="Edit meeting.">Edit</a>
+                        <a class="btn btn-outline-danger" asp-action="RemoveMeeting" asp-route-id="@item.Id" role="button" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="Delete meeting.">Delete</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

@@ -1,0 +1,48 @@
+﻿@model os.Models.AnnouncementModel
+
+<div class="text-center">
+    <img src="~/img/edit_notifications.svg" style="min-height: 125px;" />
+</div>
+<h2 class="text-center mb-4 light-txt">Add New Announcement</h2>
+<div class="search-row">
+    <div class="search-colum-1">
+        <!-- Intentionally left blank for layout consistency -->
+    </div>
+</div>
+<div class="table-wrapper">
+    <form asp-action="AddAnnouncement" method="post" autocomplete="off">
+        <table class="table table-striped">
+            <tbody>
+                <tr>
+                    <td>
+                        <label asp-for="AnnouncementTxt" class="form-label"></label>
+                        <textarea asp-for="AnnouncementTxt" class="form-control" rows="4"></textarea>
+                        <span asp-validation-for="AnnouncementTxt" class="text-danger"></span>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <label asp-for="Status" class="form-label"></label>
+                        <select asp-for="Status" class="form-control">
+                            <option value="Enabled">Enabled</option>
+                            <option value="Disabled">Disabled</option>
+                        </select>
+                        <span asp-validation-for="Status" class="text-danger"></span>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <button type="submit" class="btn btn-secondary cust-btn">Add Announcement</button>
+                        <a asp-action="ViewAnnouncements" class="btn btn-secondary cust-btn hoverblack">Cancel</a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </form>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}
