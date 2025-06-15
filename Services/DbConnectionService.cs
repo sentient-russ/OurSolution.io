@@ -949,6 +949,303 @@ namespace os.Services
             }
             return meetings;
         }
+        /*
+        * Stores a speaker removal request in the database
+        */
+        public bool StoreRemovalRequest(SpeakerRemovalRequestModel removalRequestIn)
+        {
+            bool succeeded = false;
+            try
+            {
+                using var conn = new MySqlConnection(Environment.GetEnvironmentVariable("DbConnectionString"));
+
+                string command = "INSERT INTO os.SpeakerRemovalRequests " +
+                    "(FirstName, LastName, SpeakerFirstName, SpeakerLast, Description, SpeakerId, " +
+                    "RelationToSpeaker, EmailAddress, PhoneNumber, RemovalReason, RequestDate, Status) " +
+                    "VALUES (@FirstName, @LastName, @SpeakerFirstName, @SpeakerLast, @Description, @SpeakerId, " +
+                    "@RelationToSpeaker, @EmailAddress, @PhoneNumber, @RemovalReason, @RequestDate, @Status)";
+                conn.Open();
+                MySqlCommand cmd = new MySqlCommand(command, conn);
+                cmd.Parameters.AddWithValue("@FirstName", removalRequestIn.FirstName);
+                cmd.Parameters.AddWithValue("@LastName", removalRequestIn.LastName);
+                cmd.Parameters.AddWithValue("@SpeakerFirstName", removalRequestIn.SpeakerFirstName);
+                cmd.Parameters.AddWithValue("@SpeakerLast", removalRequestIn.SpeakerLast);
+                cmd.Parameters.AddWithValue("@Description", removalRequestIn.Description);
+                cmd.Parameters.AddWithValue("@SpeakerId", removalRequestIn.SpeakerId);
+                cmd.Parameters.AddWithValue("@RelationToSpeaker", removalRequestIn.RelationToSpeaker);
+                cmd.Parameters.AddWithValue("@EmailAddress", removalRequestIn.EmailAddress);
+                cmd.Parameters.AddWithValue("@PhoneNumber", removalRequestIn.PhoneNumber);
+                cmd.Parameters.AddWithValue("@RemovalReason", removalRequestIn.RemovalReason);
+                cmd.Parameters.AddWithValue("@RequestDate", removalRequestIn.RequestDate);
+                cmd.Parameters.AddWithValue("@Status", removalRequestIn.Status);
+
+                MySqlDataReader reader = cmd.ExecuteReader();
+                reader.Close();
+
+                // Log the event
+                var email = _httpContextAccessor.HttpContext?.User?.Identity.Name;
+                string beforeUpdate = "No previous record";
+                string afterUpdate = $"Removal request for speaker: {removalRequestIn.SpeakerFirstName} {removalRequestIn.SpeakerLast}";
+                CreateLog(email, "StoreRemovalRequest() called.", beforeUpdate, afterUpdate);
+
+                conn.Close();
+                succeeded = true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+            }
+            return succeeded;
+        }
+        /*
+        * Gets a list of all speaker removal requests
+        */
+        public List<SpeakerRemovalRequestModel> GetRemovalRequests()
+        {
+            List<SpeakerRemovalRequestModel> removalRequests = new List<SpeakerRemovalRequestModel>();
+            try
+            {
+                using var conn = new MySqlConnection(Environment.GetEnvironmentVariable("DbConnectionString"));
+                string command = "SELECT * FROM os.SpeakerRemovalRequests";
+                conn.Open();
+                MySqlCommand cmd = new MySqlCommand(command, conn);
+                MySqlDataReader reader = cmd.ExecuteReader();
+                while (reader.Read())
+                {
+                    SpeakerRemovalRequestModel request = new SpeakerRemovalRequestModel();
+                    request.Id = reader.IsDBNull(0) ? null : reader.GetInt32(0);
+                    request.FirstName = reader.IsDBNull(1) ? null : reader.GetString(1);
+                    request.LastName = reader.IsDBNull(2) ? null : reader.GetString(2);
+                    request.SpeakerFirstName = reader.IsDBNull(3) ? null : reader.GetString(3);
+                    request.SpeakerLast = reader.IsDBNull(4) ? null : reader.GetString(4);
+                    request.Description = reader.IsDBNull(5) ? null : reader.GetString(5);
+                    request.SpeakerId = reader.IsDBNull(6) ? null : reader.GetString(6);
+                    request.RelationToSpeaker = reader.IsDBNull(7) ? null : reader.GetString(7);
+                    request.EmailAddress = reader.IsDBNull(8) ? null : reader.GetString(8);
+                    request.PhoneNumber = reader.IsDBNull(9) ? null : reader.GetString(9);
+                    request.RemovalReason = reader.IsDBNull(10) ? null : reader.GetString(10);
+                    request.RequestDate = reader.IsDBNull(11) ? DateTime.MinValue : reader.GetDateTime(11);
+                    request.Status = reader.IsDBNull(12) ? null : reader.GetString(12);
+                    removalRequests.Add(request);
+                }
+                reader.Close();
+                conn.Close();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+            }
+            return removalRequests;
+        }
+
+        /*
+        * Gets a single speaker removal request by ID
+        */
+        public SpeakerRemovalRequestModel GetRemovalRequestBySpeakerId(string? id)
+        {
+            SpeakerRemovalRequestModel request = new SpeakerRemovalRequestModel();
+            try
+            {
+                using var conn = new MySqlConnection(Environment.GetEnvironmentVariable("DbConnectionString"));
+                string command = "SELECT * FROM os.SpeakerRemovalRequests WHERE SpeakerId = @SpeakerId";
+                conn.Open();
+                MySqlCommand cmd = new MySqlCommand(command, conn);
+                cmd.Parameters.AddWithValue("@SpeakerId", Int32.Parse(id));
+                MySqlDataReader reader = cmd.ExecuteReader();
+                while (reader.Read())
+                {
+                    request.Id = reader.IsDBNull(0) ? null : reader.GetInt32(0);
+                    request.FirstName = reader.IsDBNull(1) ? null : reader.GetString(1);
+                    request.LastName = reader.IsDBNull(2) ? null : reader.GetString(2);
+                    request.SpeakerFirstName = reader.IsDBNull(3) ? null : reader.GetString(3);
+                    request.SpeakerLast = reader.IsDBNull(4) ? null : reader.GetString(4);
+                    request.Description = reader.IsDBNull(5) ? null : reader.GetString(5);
+                    request.SpeakerId = reader.IsDBNull(6) ? null : reader.GetString(6);
+                    request.RelationToSpeaker = reader.IsDBNull(7) ? null : reader.GetString(7);
+                    request.EmailAddress = reader.IsDBNull(8) ? null : reader.GetString(8);
+                    request.PhoneNumber = reader.IsDBNull(9) ? null : reader.GetString(9);
+                    request.RemovalReason = reader.IsDBNull(10) ? null : reader.GetString(10);
+                    request.RequestDate = reader.IsDBNull(11) ? DateTime.MinValue : reader.GetDateTime(11);
+                    request.Status = reader.IsDBNull(12) ? null : reader.GetString(12);
+                }
+                reader.Close();
+                conn.Close();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+            }
+            return request;
+        }
+        /*
+* Gets a single speaker removal request by ID
+*/
+        public SpeakerRemovalRequestModel GetRemovalRequestByTableId(int? id)
+        {
+            SpeakerRemovalRequestModel request = new SpeakerRemovalRequestModel();
+            try
+            {
+                using var conn = new MySqlConnection(Environment.GetEnvironmentVariable("DbConnectionString"));
+                string command = "SELECT * FROM os.SpeakerRemovalRequests WHERE Id = @Id";
+                conn.Open();
+                MySqlCommand cmd = new MySqlCommand(command, conn);
+                cmd.Parameters.AddWithValue("@Id", id);
+                MySqlDataReader reader = cmd.ExecuteReader();
+                while (reader.Read())
+                {
+                    request.Id = reader.IsDBNull(0) ? null : reader.GetInt32(0);
+                    request.FirstName = reader.IsDBNull(1) ? null : reader.GetString(1);
+                    request.LastName = reader.IsDBNull(2) ? null : reader.GetString(2);
+                    request.SpeakerFirstName = reader.IsDBNull(3) ? null : reader.GetString(3);
+                    request.SpeakerLast = reader.IsDBNull(4) ? null : reader.GetString(4);
+                    request.Description = reader.IsDBNull(5) ? null : reader.GetString(5);
+                    request.SpeakerId = reader.IsDBNull(6) ? null : reader.GetString(6);
+                    request.RelationToSpeaker = reader.IsDBNull(7) ? null : reader.GetString(7);
+                    request.EmailAddress = reader.IsDBNull(8) ? null : reader.GetString(8);
+                    request.PhoneNumber = reader.IsDBNull(9) ? null : reader.GetString(9);
+                    request.RemovalReason = reader.IsDBNull(10) ? null : reader.GetString(10);
+                    request.RequestDate = reader.IsDBNull(11) ? DateTime.MinValue : reader.GetDateTime(11);
+                    request.Status = reader.IsDBNull(12) ? null : reader.GetString(12);
+                }
+                reader.Close();
+                conn.Close();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+            }
+            return request;
+        }
+
+        /*
+        * Updates a speaker removal request
+        */
+        public bool UpdateRemovalRequest(SpeakerRemovalRequestModel requestIn)
+        {
+            bool succeeded = false;
+            try
+            {
+                using var conn = new MySqlConnection(Environment.GetEnvironmentVariable("DbConnectionString"));
+                string command = "UPDATE os.SpeakerRemovalRequests SET FirstName = @FirstName, LastName = @LastName, " +
+                    "SpeakerFirstName = @SpeakerFirstName, SpeakerLast = @SpeakerLast, Description = @Description, " +
+                    "SpeakerId = @SpeakerId, RelationToSpeaker = @RelationToSpeaker, EmailAddress = @EmailAddress, " +
+                    "PhoneNumber = @PhoneNumber, RemovalReason = @RemovalReason, Status = @Status " +
+                    "WHERE Id = @Id";
+
+                conn.Open();
+                MySqlCommand cmd = new MySqlCommand(command, conn);
+                cmd.Parameters.AddWithValue("@Id", requestIn.Id);
+                cmd.Parameters.AddWithValue("@FirstName", requestIn.FirstName);
+                cmd.Parameters.AddWithValue("@LastName", requestIn.LastName);
+                cmd.Parameters.AddWithValue("@SpeakerFirstName", requestIn.SpeakerFirstName);
+                cmd.Parameters.AddWithValue("@SpeakerLast", requestIn.SpeakerLast);
+                cmd.Parameters.AddWithValue("@Description", requestIn.Description);
+                cmd.Parameters.AddWithValue("@SpeakerId", requestIn.SpeakerId);
+                cmd.Parameters.AddWithValue("@RelationToSpeaker", requestIn.RelationToSpeaker);
+                cmd.Parameters.AddWithValue("@EmailAddress", requestIn.EmailAddress);
+                cmd.Parameters.AddWithValue("@PhoneNumber", requestIn.PhoneNumber);
+                cmd.Parameters.AddWithValue("@RemovalReason", requestIn.RemovalReason);
+                cmd.Parameters.AddWithValue("@Status", requestIn.Status);
+
+                int rowsAffected = cmd.ExecuteNonQuery();
+                conn.Close();
+
+                succeeded = rowsAffected > 0;
+                if (succeeded)
+                {
+                    // Log the event
+                    var email = _httpContextAccessor.HttpContext?.User?.Identity.Name;
+                    SpeakerRemovalRequestModel previousRequest = GetRemovalRequestBySpeakerId(requestIn.Id.ToString());
+                    string beforeUpdate = $"Request ID: {previousRequest.Id}, Status: {previousRequest.Status}";
+                    string afterUpdate = $"Request ID: {requestIn.Id}, Status: {requestIn.Status}";
+                    CreateLog(email, "UpdateRemovalRequest() called.", beforeUpdate, afterUpdate);
+                }
+
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+            }
+            return succeeded;
+        }
+
+        /*
+        * Updates just the status of a speaker removal request
+        */
+        public bool UpdateRemovalRequestStatus(int? id, string status)
+        {
+            bool succeeded = false;
+            try
+            {
+
+
+                using var conn = new MySqlConnection(Environment.GetEnvironmentVariable("DbConnectionString"));
+                string command = "UPDATE os.SpeakerRemovalRequests SET Status = @Status WHERE Id = @Id";
+
+                conn.Open();
+                MySqlCommand cmd = new MySqlCommand(command, conn);
+                cmd.Parameters.AddWithValue("@Id", id);
+                cmd.Parameters.AddWithValue("@Status", status);
+
+                int rowsAffected = cmd.ExecuteNonQuery();
+                conn.Close();
+
+                succeeded = rowsAffected > 0;
+
+                if (succeeded)
+                {
+                    // Log the event
+                    var email = _httpContextAccessor.HttpContext?.User?.Identity.Name;
+                    SpeakerRemovalRequestModel previousRequest = GetRemovalRequestByTableId(id);
+                    string beforeUpdate = $"Request ID: {previousRequest.Id}, Status: {previousRequest.Status}";
+                    string afterUpdate = $"Request ID: {id}, Status: {status}";
+                    CreateLog(email, "UpdateRemovalRequestStatus() called.", beforeUpdate, afterUpdate);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+            }
+            return succeeded;
+        }
+
+        /*
+        * Deletes a speaker removal request
+        */
+        public bool DeleteRemovalRequest(int id)
+        {
+            bool succeeded = false;
+            try
+            {
+                using var conn = new MySqlConnection(Environment.GetEnvironmentVariable("DbConnectionString"));
+                string command = "DELETE FROM os.SpeakerRemovalRequests WHERE Id = @Id";
+
+                conn.Open();
+                MySqlCommand cmd = new MySqlCommand(command, conn);
+                cmd.Parameters.AddWithValue("@Id", id);
+
+                int rowsAffected = cmd.ExecuteNonQuery();
+                conn.Close();
+
+                succeeded = rowsAffected > 0;
+
+                // Log the event
+                if (succeeded)
+                {
+                    var email = _httpContextAccessor.HttpContext?.User?.Identity.Name;
+                    SpeakerRemovalRequestModel previousRequest = GetRemovalRequestByTableId(id);
+                    string beforeDelete = $"Request ID: {id}, Speaker: {previousRequest.SpeakerFirstName} {previousRequest.SpeakerLast}, Status: {previousRequest.Status}";
+                    CreateLog(email, "DeleteRemovalRequest() called.", beforeDelete, "Record deleted");
+                }
+
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+            }
+            return succeeded;
+        }
+
     }
 
 }

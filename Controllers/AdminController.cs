@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -17,16 +18,18 @@ namespace os.Controllers
         private readonly DbConnectionService _dbConnectionService;
         private readonly ApplicationDbContext _DbContext;
         private readonly RoleManager<IdentityRole> _roleManager;
-
+        private readonly IEmailSender _emailSender;
         public AdminController(UserManager<AppUser> userManager, 
             DbConnectionService dbConnectionService, 
             ApplicationDbContext DbContext, 
-            RoleManager<IdentityRole> roleManager)
+            RoleManager<IdentityRole> roleManager,
+            IEmailSender emailSender)
         {
             _userManager = userManager;
             _dbConnectionService = dbConnectionService;
             _DbContext = DbContext;
             _roleManager = roleManager;
+            _emailSender = emailSender;
         }
 
         [Authorize(Roles = "Administrator")]
@@ -574,6 +577,117 @@ namespace os.Controllers
             }
             return View(model);
         }
+
+        [Authorize(Roles = "Administrator")]
+        [HttpGet]
+        public IActionResult DeleteRemovalRequest(int id)
+        {
+            SpeakerRemovalRequestModel request = _dbConnectionService.GetRemovalRequestByTableId(id);
+            if (request?.Id == null)
+            {
+                TempData["ErrorMessage"] = "Request not found.";
+                return RedirectToAction("ManageRemovalRequests");
+            }
+
+            bool success = _dbConnectionService.DeleteRemovalRequest(id);
+            if (success)
+            {
+                TempData["StatusMessage"] = "Request deleted successfully.";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = "Failed to delete request.";
+            }
+
+            return RedirectToAction("ViewRemovalRequests");
+        }
+
+        [Authorize(Roles = "Administrator")]
+        [HttpGet]
+        public IActionResult ViewRemovalRequests()
+        {
+            List<SpeakerRemovalRequestModel> requests = _dbConnectionService.GetRemovalRequests();
+            return View(requests);
+        }
+
+        [Authorize(Roles = "Administrator")]
+        [HttpGet]
+        public IActionResult ViewRemovalRequest(int id)
+        {
+            SpeakerRemovalRequestModel request = _dbConnectionService.GetRemovalRequestByTableId(id);
+            if (request?.Id == null)
+            {
+                TempData["ErrorMessage"] = "Request not found.";
+                return RedirectToAction("ManageRemovalRequests");
+            }
+            return View(request);
+        }
+
+        [Authorize(Roles = "Administrator")]
+        [HttpPost]
+        public async Task<IActionResult> ProcessRemovalRequest(SpeakerRemovalRequestModel updatedRequest)
+        {
+            SpeakerRemovalRequestModel orriginalRequest = _dbConnectionService.GetRemovalRequestBySpeakerId(updatedRequest.SpeakerId);
+            if (orriginalRequest?.Id == null)
+            {
+                TempData["ErrorMessage"] = "Request not found.";
+                return RedirectToAction("ManageRemovalRequests");
+            }
+
+
+            // Only process if the status is changing
+            if (updatedRequest.Status != orriginalRequest.Status)
+            {
+                // Update the status in the database
+                bool success = _dbConnectionService.UpdateRemovalRequestStatus(orriginalRequest.Id, updatedRequest.Status);
+
+                if (success)
+                {
+                    // If the request is approved and there's a speaker ID, update the speaker status
+                    if (updatedRequest.Status == "Approved" && !string.IsNullOrEmpty(updatedRequest.SpeakerId) &&
+                        int.TryParse(updatedRequest.SpeakerId, out int speakerId))
+                    {
+                        SpeakerModel speaker = _dbConnectionService.GetSpeakerById(speakerId);
+                        if (speaker?.SpeakerId != null)
+                        {
+                            speaker.SpeakerStatus = "Disabled";
+                            _dbConnectionService.UpdateSpeakerDetails(speaker);
+                        }
+                    }
+
+                    // Send email notification to the requester
+                    if (!string.IsNullOrEmpty(updatedRequest.EmailAddress))
+                    {
+                        string emailSubject = $"Speaker Removal Request {updatedRequest.Status}";
+                        string emailBody = $"SPEAKER REMOVAL REQUEST {updatedRequest.Status.ToUpper()}\r\n\r\n" +
+                          $"Dear {updatedRequest.FirstName},\r\n\r\n" +
+                          $"Your request to remove speaker {updatedRequest.SpeakerFirstName} {updatedRequest.SpeakerLast} has been {updatedRequest.Status.ToLower()}.\r\n\r\n" +
+                          $"{(updatedRequest.Status == "Approved" ? "The speaker has been removed from our public listings." : "The administrator has reviewed your request and determined that the speaker should remain in our listings. Please feel free to resubmit your request with more information if you disagree with this decision.")}\r\n\r\n" +
+                          $"Thank you for your patience.\r\n\r\n" +
+                          $"OurSolution.io Team";
+
+                        await _emailSender.SendEmailAsync(
+                            updatedRequest.EmailAddress,
+                            emailSubject,
+                            emailBody
+                        );
+                    }
+
+                    TempData["StatusMessage"] = $"Request has been {updatedRequest.Status.ToLower()} successfully.";
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = "Failed to update request status.";
+                }
+            } else
+            {
+                TempData["ErrorMessage"] = "Failed to update request status.";
+            }
+
+            return RedirectToAction("ViewRemovalRequests");
+        }
+
+
     }
 
 }

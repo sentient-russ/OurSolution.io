@@ -34,7 +34,7 @@ public class EmailService : IEmailSender
         email.From.Add(MailboxAddress.Parse(emailAddress));
         email.To.Add(MailboxAddress.Parse(toEmail));
         email.Subject = subject;
-        email.Body = new TextPart(MimeKit.Text.TextFormat.Html)
+        email.Body = new TextPart(MimeKit.Text.TextFormat.Plain)
         {
             Text = message
         };

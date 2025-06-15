@@ -22,6 +22,7 @@
 <audio id="audioPlayer" controls hidden></audio>
 @* <center><h2 class="light-txt">Private Speakers</h2></center> *@
 <div class="container-row">
+    <div class="container-column">
     <div class="player-container">
         <div class="status-window">
             <!-- Status Message Row -->
@@ -104,6 +105,11 @@
             <div class="file-list-container" id="fileList">
                 <!-- File list will be populated here -->
             </div>
+        </div>
+        
+    </div>
+        <div class="removal-container">
+            <a href="@Url.Action("SpeakerRemovalRequest", "Home")" class="btn btn-primary removal-btn-txt">Request Speaker Removal</a>
         </div>
     </div>
 </div>

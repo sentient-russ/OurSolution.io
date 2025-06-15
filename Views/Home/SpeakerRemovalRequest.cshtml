@@ -1,0 +1,101 @@
+﻿@model os.Models.SpeakerRemovalRequestModel
+@inject os.Services.DbConnectionService DbConnectionService
+
+@{
+    ViewData["Title"] = "Request Speaker Removal";
+    var activeSpeakers = DbConnectionService.GetAllSpeakersList();
+}
+
+<div class="intro-message light-txt message-txt">
+    <p>It is the policy of this site to respect the wishes of the speakers and their imediate family.</p>
+    <p>If you would like one of the speakers removed, we want to know about it.</p>
+    <p>Thank you in advance for your feedback!</p>
+</div>
+
+<div class="login-container-row">
+    <div class="login-container-column">
+        <h1 class="light-txt text-center">@ViewData["Title"]</h1>
+        <section>
+                <form asp-action="SubmitSpeakerRemovalRequest" method="post">
+                    <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+
+                    <div class="form-floating mb-3">
+                        <input asp-for="FirstName" class="form-control" autocomplete="given-name" aria-required="true" placeholder="John" />
+                        <label asp-for="FirstName">Your First Name</label>
+                        <span asp-validation-for="FirstName" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-floating mb-3">
+                        <input asp-for="LastName" class="form-control" autocomplete="family-name" aria-required="true" placeholder="Doe" />
+                        <label asp-for="LastName">Your Last Name</label>
+                        <span asp-validation-for="LastName" class="text-danger"></span>
+                    </div>
+                    <div class="form-floating mb-3">
+                        <select asp-for="Speaker" class="form-select" aria-required="true" id="speakerSelect" onchange="populateSpeakerDetails()" required>
+                            <option value="">Select a Speaker (required)</option>
+                            @foreach (var speaker in activeSpeakers)
+                            {
+                                <option value="@speaker.SpeakerId">@speaker.SpeakerId, @speaker.FirstName, @(speaker.LastName?.Substring(0, 1))</option>
+                            }
+                        </select>
+                        <label asp-for="Speaker">Speaker ID</label>
+                        <span asp-validation-for="Speaker" class="text-danger"></span>
+                    </div>
+                    <div class="form-floating mb-3">
+                        <select asp-for="RelationToSpeaker" class="form-select" aria-required="true" required>
+                            <option value="">Select Relation</option>
+                            <option value="Self">Self</option>
+                            <option value="Family Member">Family Member</option>
+                            <option value="Legal Representative">Legal Representative</option>
+                            <option value="Other">Other</option>
+                        </select>
+                        <label asp-for="RelationToSpeaker">Relation to Speaker (required)</label>
+                        <span asp-validation-for="RelationToSpeaker" class="text-danger"></span>
+                    </div>
+                    <div class="form-floating mb-3">
+                        <input asp-for="EmailAddress" class="form-control" autocomplete="email" aria-required="true" placeholder="name@example.com" required/>
+                        <label asp-for="EmailAddress">Your Email (required)</label>
+                        <span asp-validation-for="EmailAddress" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-floating mb-3">
+                        <input asp-for="PhoneNumber" class="form-control" autocomplete="tel" placeholder="(123) 456-7890" />
+                        <label asp-for="PhoneNumber">Your Phone Number</label>
+                        <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-floating mb-3">
+                        <textarea asp-for="RemovalReason" class="form-control" style="height: 100px;" aria-required="true" placeholder="Please explain"></textarea>
+                        <label asp-for="RemovalReason">Reason for Removal</label>
+                        <span asp-validation-for="RemovalReason" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-floating mb-3">
+                        <input asp-for="RequestDate" class="form-control" type="date" value="@DateTime.Now.ToString("yyyy-MM-dd")" />
+                        <label asp-for="RequestDate">Request Date</label>
+                        <span asp-validation-for="RequestDate" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-floating mb-3" hidden>
+                        <select asp-for="Status" class="form-select">
+                            <option value="Pending" selected>Pending</option>
+                            <option value="Approved">Approved</option>
+                            <option value="Denied">Denied</option>
+                        </select>
+                        <label asp-for="Status">Status</label>
+                        <span asp-validation-for="Status" class="text-danger"></span>
+                    </div>
+
+                <button id="removal-submit" type="submit" class="removal-submit-btn btn-primary">Submit Request</button>
+
+                    <div class="mt-3" style="margin-left: 10px;">
+                        <a asp-action="Index" class="btn btn-link">Return Home</a>
+                    </div>
+                </form>
+        </section>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

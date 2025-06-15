@@ -66,6 +66,17 @@ a {
     color: var(--dim-grey) !important;
     font-size: 1.35rem;
 }
+.view-removal-txt-container{
+    display: flex;
+    flex-direction: row;
+    margin-left: auto;
+    margin-right: auto;
+    max-width: 500px;
+}
+.view-removal-txt {
+    color: var(--dim-grey) !important;
+    font-size: 1rem;
+}
 .light-txt-heading {
     color: var(--powder-blue) !important;
     font-size: 2.25rem !important;
@@ -460,8 +471,10 @@ th, td {
 td{
     text-align: left;
 }
-
-.la{
+.text-left{
+    text-align: left;
+}
+.la {
     text-align: left;
 }
 .ca{
@@ -541,7 +554,28 @@ input:-webkit-autofill:focus {
     padding-right: 5px;
     padding-left: 5px;
 }
-
+.removal-container {
+    display: flex;
+    flex-direction: column;
+    width: 305px;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 20px;
+    backdrop-filter: blur(21px) saturate(137%);
+    -webkit-backdrop-filter: blur(21px) saturate(137%);
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    border: .25px solid var(--electric-blue);
+    padding:5px;
+}
+.removal-btn-txt {
+    padding-top: 10px !important;
+}
+.removal-submit-btn {
+    max-width: 90%;
+    text-align: center;
+    margin-left: 18.5px;
+}
 .password-message {
     display: flex;
     flex-direction: column;

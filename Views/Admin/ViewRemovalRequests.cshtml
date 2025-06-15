@@ -1,0 +1,129 @@
+﻿@model IEnumerable<os.Models.SpeakerRemovalRequestModel>
+@using Microsoft.AspNetCore.Identity
+@using os.Areas.Identity.Data
+@inject UserManager<AppUser> UserManager
+@{
+    var user = await UserManager.GetUserAsync(User);
+}
+ 
+<div class="text-center">
+    <img src="~/img/removal_request.svg" style="min-height: 125px;" />
+</div>
+<h2 class="text-center mb-4 light-txt">Removal Requests</h2>
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert" id="errorMessage">
+        @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+@if (TempData["StatusMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert" id="statusMessage">
+        @TempData["StatusMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th class="text-left">
+                Requestor First Name
+            </th>
+            <th class="text-left">
+                Requestor Last Name
+            </th>
+            <th class="text-left">
+                Speaker First Name
+            </th>
+            <th class="text-left">
+                Speaker Last Name
+            </th>
+            <th class="text-left">
+                Date Requested
+            </th>
+            <th class="text-left">
+                Request Status
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>
+                    @Html.DisplayFor(modelItem => item.FirstName)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.LastName)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.SpeakerFirstName)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.SpeakerLast)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.RequestDate)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Status)
+                </td>
+                <td>
+                    <a class="btn btn-outline-primary" asp-action="ViewRemovalRequest" asp-route-id="@item.Id" role="button" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="View request details.">Process Request</a>
+                    @if(user != null && user.Email.Contains("russell@magnadigi.com"))
+                    {
+                        <a class="btn btn-outline-danger" asp-action="DeleteRemovalRequest" asp-controller="Admin" asp-route-id="@item.Id" role="button" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="Delete this request.">Delete</a>
+                    }               
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@section Scripts {
+    <script>
+        // Add CSS for fade effect
+        document.head.insertAdjacentHTML('beforeend', `
+            <style>
+                .alert.fade-out {
+                    opacity: 0;
+                    transition: opacity 1s ease-out;
+                }
+            </style>
+        `);
+
+        // Auto-dismiss alerts with fade effect
+        document.addEventListener('DOMContentLoaded', function() {
+            // Get the alert elements
+            const errorMessage = document.getElementById('errorMessage');
+            const statusMessage = document.getElementById('statusMessage');
+
+            // Set timers to auto-dismiss alerts
+            if (errorMessage) {
+                setTimeout(function() {
+                    // Add fade-out class first
+                    errorMessage.classList.add('fade-out');
+
+                    // Remove the element after transition completes
+                    setTimeout(function() {
+                        errorMessage.remove();
+                    }, 1000); // This matches the transition duration (1s)
+                }, 5000);
+            }
+
+            if (statusMessage) {
+                setTimeout(function() {
+                    // Add fade-out class first
+                    statusMessage.classList.add('fade-out');
+
+                    // Remove the element after transition completes
+                    setTimeout(function() {
+                        statusMessage.remove();
+                    }, 1000); // This matches the transition duration (1s)
+                }, 5000);
+            }
+        });
+    </script>
+}

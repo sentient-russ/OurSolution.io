@@ -160,6 +160,7 @@ builder.Services.AddMvc();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<StatsTracker>();
 builder.Services.AddScoped<IVisitorRepository, VisitorRepository>();
+builder.Services.AddTransient<IEmailSender, EmailService>();
 var app = builder.Build();
 
 if (!app.Environment.IsDevelopment())
