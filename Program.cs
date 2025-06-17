@@ -161,6 +161,9 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<StatsTracker>();
 builder.Services.AddScoped<IVisitorRepository, VisitorRepository>();
 builder.Services.AddTransient<IEmailSender, EmailService>();
+builder.Services.AddScoped<ITranscriptionService, TranscriptionService>();
+//builder.Services.AddScoped<OllamaService>();
+
 var app = builder.Build();
 
 if (!app.Environment.IsDevelopment())
@@ -202,3 +205,4 @@ app.MapControllerRoute(
 
 app.MapRazorPages();
 app.Run();
+
