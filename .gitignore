@@ -487,4 +487,6 @@ $RECYCLE.BIN/
 site.js
 
 # file uploads folder container speakers
-/wwwroot/uploads/
+wwwroot/uploads/*
+wwwroot/transcriptions/*
+

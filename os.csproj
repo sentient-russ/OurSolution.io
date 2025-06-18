@@ -8,9 +8,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="log\**" />
     <Compile Remove="wwwroot\images\**" />
+    <Content Remove="log\**" />
     <Content Remove="wwwroot\images\**" />
+    <EmbeddedResource Remove="log\**" />
     <EmbeddedResource Remove="wwwroot\images\**" />
+    <None Remove="log\**" />
     <None Remove="wwwroot\images\**" />
   </ItemGroup>
 
@@ -35,11 +39,13 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.11" />
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="8.0.7" />
     <PackageReference Include="MySqlConnector" Version="2.4.0" />
+    <PackageReference Include="NAudio" Version="2.2.1" />
+    <PackageReference Include="NAudio.Lame" Version="2.1.0" />
     <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="8.0.2" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="log\" />
+    <Folder Include="tmp\" />
     <Folder Include="Views\Shared\" />
     <Folder Include="wwwroot\css\" />
     <Folder Include="wwwroot\lib\bootstrap\" />
@@ -49,6 +55,7 @@
     <Folder Include="wwwroot\lib\jquery-validation\dist\" />
     <Folder Include="wwwroot\lib\jquery\" />
     <Folder Include="wwwroot\lib\jquery\dist\" />
+    <Folder Include="wwwroot\transcriptions\" />
   </ItemGroup>
 
 </Project>
