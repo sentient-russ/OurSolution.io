@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using os.Areas.Identity.Data;
+using os.Migrations;
 using os.Models;
 using os.Services;
 using System.Security.Claims;
@@ -19,17 +20,20 @@ namespace os.Controllers
         private readonly ApplicationDbContext _DbContext;
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly IEmailSender _emailSender;
+        private readonly AudioReplacementService _audioReplacementService;
         public AdminController(UserManager<AppUser> userManager, 
             DbConnectionService dbConnectionService, 
             ApplicationDbContext DbContext, 
             RoleManager<IdentityRole> roleManager,
-            IEmailSender emailSender)
+            IEmailSender emailSender,
+            AudioReplacementService audioReplacementService)
         {
             _userManager = userManager;
             _dbConnectionService = dbConnectionService;
             _DbContext = DbContext;
             _roleManager = roleManager;
             _emailSender = emailSender;
+            _audioReplacementService = audioReplacementService;
         }
 
         [Authorize(Roles = "Administrator")]
@@ -96,7 +100,7 @@ namespace os.Controllers
         [HttpPost]
         [Authorize(Roles = "Administrator")]
         [RequestSizeLimit(700 * 1024 * 1024)] // 700MB
-        public async Task<IActionResult> UploadSpeaker([Bind("SpeakerId, FileName, FirstName, LastName, Description, NumUpVotes, DateRecorded, UploadDate, UploadedBy, SpeakerStatus, Visibility, FormFile")] SpeakerModel newSpeakerIn)
+        public async Task<IActionResult> UploadSpeaker([Bind("SpeakerId, FileName, FirstName, LastName, Description, NumUpVotes, DateRecorded, UploadDate, UploadedBy, SpeakerStatus, Visibility, ReplacedNames, FormFile")] SpeakerModel newSpeakerIn)
         {
             var LoggedInAppUser = await _userManager.GetUserAsync(User);
 
@@ -105,15 +109,15 @@ namespace os.Controllers
             string speakerFirstNamePostFix = newSpeakerIn.FirstName.Substring(1).ToLower();
             string speakerFirstName = speakerFirstNameInitial + speakerFirstNamePostFix;
             newSpeakerIn.FirstName = speakerFirstName;
-            
+
             string speakerLastNameInitial = newSpeakerIn.LastName.Substring(0, 1).ToUpper();
             string speakerLastNamePostFix = newSpeakerIn.LastName.Substring(1).ToLower();
             string speakerLastName = speakerLastNameInitial + speakerLastNamePostFix;
             newSpeakerIn.LastName = speakerLastName;
-            
+
             string? speakerAbbreviation = newSpeakerIn.FirstName + "_" + newSpeakerIn.LastName.Substring(0, 1).ToUpper();
             string? LoggedInUserAbbreviation = LoggedInAppUser.FirstName + "_" + LoggedInAppUser.LastName.Substring(0, 1).ToUpper();
-            
+
             // Handle MP3 upload
             if (newSpeakerIn.FormFile == null || newSpeakerIn.FormFile.Length == 0)
             {
@@ -190,18 +194,48 @@ namespace os.Controllers
                 newSpeakerIn.DisplayFileName = speakerAbbreviation;
                 newSpeakerIn.UploadedById = LoggedInAppUser.Id;
                 newSpeakerIn.UploadedBy = LoggedInUserAbbreviation;
-                var succeeded = _dbConnectionService.AddSpeaker(newSpeakerIn);
+                var newSpeakerId = _dbConnectionService.AddSpeaker(newSpeakerIn);
 
-                if (succeeded)
-                {
-                    ViewBag.StatusMessage = "File uploaded successfully.";
-                    return RedirectToAction("Index");
-                }
-                else
+                if (newSpeakerId == 0)
                 {
                     ViewBag.StatusMessage = "Error uploading. Try again or contact development.";
                     return View("AddSpeaker");
                 }
+
+                // If name replacement is requested, process in the background
+                if (newSpeakerIn.ReplacedNames)
+                {
+                    // Start the audio replacement process in the background
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            // Process the audio file
+                            string? anonymizedFileName = await _audioReplacementService.ReplaceAudioAsync(newSpeakerId);
+
+                            // Save the anonymized file name to the database
+                            if (!string.IsNullOrEmpty(anonymizedFileName))
+                            {
+                                SpeakerModel updatedSpeaker = _dbConnectionService.GetSpeakerById(newSpeakerId);
+                                updatedSpeaker.SecretFileName = anonymizedFileName;
+                                _dbConnectionService.UpdateSpeakerDetails(updatedSpeaker);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            // Log the error but don't interrupt the user experience
+                            Console.WriteLine($"Error during audio replacement: {ex.Message}");
+                        }
+                    });
+
+                    ViewBag.StatusMessage = "File uploaded successfully. Audio processing for name replacement is running in the background and may take up to 15 minutes to complete.";
+                }
+                else
+                {
+                    ViewBag.StatusMessage = "File uploaded successfully.";
+                }
+
+                return RedirectToAction("Index");
             }
             else
             {

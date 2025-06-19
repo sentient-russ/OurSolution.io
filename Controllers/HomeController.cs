@@ -53,13 +53,9 @@ namespace os.Controllers
             List<MeetingModel> meetingList = _dbConnectionService.GetMeetingList();
             homeBundle.MeetingList = meetingList.Where(m => m.Status == "Active").OrderBy(m => m.Weekday).ThenBy(m => m.StartTime).ToList();
 
-            // Call the transcription service to get the latest transcription file
-            string? updatAudioPath =  await _audioReplacementService.ReplaceAudioAsync();
-
             // Always return the HomeBundle model that the view expects
             return View(homeBundle);
         }
-
 
         [HttpGet]
         public IActionResult Meetings()

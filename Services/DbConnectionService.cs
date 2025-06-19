@@ -231,7 +231,7 @@ namespace os.Services
         /*
          * Adds new speaker's details
          */
-        public bool AddSpeaker(SpeakerModel speakerIn)
+        public int AddSpeaker(SpeakerModel speakerIn)
         {
             // Log the event; must take place before the update to capture before and after state.
             var email = _httpContextAccessor.HttpContext?.User?.Identity.Name;
@@ -239,7 +239,7 @@ namespace os.Services
             string beforeUpdate = "No previous record";
             string afterUpdate = SpeakerDetailsString(speakerIn);
             CreateLog(email, "AddSpeaker() called.", beforeUpdate, afterUpdate);
-            bool Succeeded = false;
+            int newSpeakerId = 0;
 
             try
             {
@@ -260,18 +260,18 @@ namespace os.Services
                 cmd1.Parameters.AddWithValue("@SecretFileName", speakerIn.SecretFileName);
                 cmd1.Parameters.AddWithValue("@UploadedById", speakerIn.UploadedById);
                 cmd1.Parameters.AddWithValue("@Visibility", speakerIn.Visibility);
+                newSpeakerId = Convert.ToInt32(cmd1.ExecuteScalar());
 
                 MySqlDataReader reader1 = cmd1.ExecuteReader();
                 reader1.Close();
                 conn1.Close();
-                Succeeded = true;
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.ToString());
             }
-
-            return Succeeded;
+            
+            return newSpeakerId;
         }
         public string SpeakerDetailsString(SpeakerModel speakerIn)
         {

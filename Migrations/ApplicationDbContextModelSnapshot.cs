@@ -506,6 +506,9 @@ namespace os.Migrations
                     b.Property<int?>("NumUpVotes")
                         .HasColumnType("int");
 
+                    b.Property<bool>("ReplacedNames")
+                        .HasColumnType("tinyint(1)");
+
                     b.Property<string>("SecretFileName")
                         .HasColumnType("longtext");
 

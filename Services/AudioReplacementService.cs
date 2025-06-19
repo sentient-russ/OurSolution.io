@@ -36,52 +36,49 @@ namespace os.Services
             return await System.IO.File.ReadAllTextAsync(filePath);
         }
 
-        public async Task<string> ReplaceAudioAsync()
+        public async Task<string> ReplaceAudioAsync(int speakerIdIn)
         {
             // Transcription, time stamp identification and name removal service
             string updatedAudioPath = string.Empty;
             try
             {
-                var speaker = _dbConnectionService.GetSpeakerById(44);
-                //string transcription = "";
-                //if (speaker != null)
-                //{
-                //    // Add the force parameter to ensure it uses the latest implementation
-                //    transcription = await _transcriptionService.TranscribeSpeakerMp3(speaker, force: true);
-                //    ViewBag.Transcription = transcription;
-                //    ViewBag.TranscriptionInfo = $"Transcribed using {_transcriptionService.GetType().Name} with WhisperS2T";
-                //}
-
-
+                var speaker = _dbConnectionService.GetSpeakerById(speakerIdIn);
+                string transcription = "";
+                if (speaker != null)
+                {
+                    // Add the force parameter to ensure it uses the latest implementation
+                    transcription = await _transcriptionService.TranscribeSpeakerMp3(speaker, force: true);
+                    Debug.WriteLine($"Transcribed using {_transcriptionService.GetType().Name}");
+                }
                 using var httpClient = new HttpClient();
                 var extractor = new SpeakerExtractor(httpClient);
 
 
 
-                //// Extract the filename from the transcription string
-                //string fileName = string.Empty;
-                //if (transcription.StartsWith("# Transcription of "))
-                //{
-                //    // Find the text between "# Transcription of " and the next newline or .mp3
-                //    int startIndex = "# Transcription of ".Length;
-                //    int endIndex = transcription.IndexOf("\r\n", startIndex);
+                // Extract the filename from the transcription string
+                string fileName = string.Empty;
+                if (transcription.StartsWith("# Transcription of "))
+                {
+                    // Find the text between "# Transcription of " and the next newline or .mp3
+                    int startIndex = "# Transcription of ".Length;
+                    int endIndex = transcription.IndexOf("\r\n", startIndex);
 
-                //    if (endIndex > startIndex)
-                //    {
-                //        // Extract the full filename (including .mp3 extension)
-                //        string fullFileName = transcription.Substring(startIndex, endIndex - startIndex);
+                    if (endIndex > startIndex)
+                    {
+                        // Extract the full filename (including .mp3 extension)
+                        string fullFileName = transcription.Substring(startIndex, endIndex - startIndex);
 
-                //        // Store the extracted filename
-                //        fileName = fullFileName;
-                //        fileName = Path.GetFileNameWithoutExtension(fullFileName);
-                //        fileName += "_transcript.txt";
-                //    }
-                //}
-                //// Load the transcript from memory
-                //string fullTranscriptText = await LoadTranscriptionFile(fileName);
+                        // Store the extracted filename
+                        fileName = fullFileName;
+                        fileName = Path.GetFileNameWithoutExtension(fullFileName);
+                        fileName += "_transcript.txt";
+                    }
+                }
+                // Load the transcript from memory
+                string fullTranscriptText = await LoadTranscriptionFile(fileName);
 
                 // Load the transcript file
-                string fullTranscriptText = await LoadTranscriptionFile("Boston_F_1749991986760_transcript.txt");
+                //string fullTranscriptText = await LoadTranscriptionFile("Boston_F_1749991986760_transcript.txt");
 
                 // Extract only the segments part (everything after "## Segments")
                 string transcriptContext = "";

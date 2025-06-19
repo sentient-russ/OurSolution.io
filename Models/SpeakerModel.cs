@@ -69,5 +69,7 @@ namespace os.Models
         [NotMapped]
         [Required]
         public IFormFile? FormFile { get; set; }
+
+        public bool ReplacedNames { get; set; } = false;
     }
 }
