@@ -206,7 +206,7 @@ namespace os.Services
                 using var conn1 = new MySqlConnection(Environment.GetEnvironmentVariable("DbConnectionString"));
                 string command = "UPDATE os.Speakers SET FirstName = @FirstName, LastName = @LastName," +
                     " Description = @Description ,DateRecorded = @DateRecorded, SpeakerStatus = @SpeakerStatus, " +
-                    " Visibility = @Visibility WHERE SpeakerId LIKE @SpeakerId";
+                    " SecretFileName = @SecretFileName, Visibility = @Visibility WHERE SpeakerId LIKE @SpeakerId";
                 conn1.Open();
                 MySqlCommand cmd1 = new MySqlCommand(command, conn1);
                 cmd1.Parameters.AddWithValue("@SpeakerId", speakerIn.SpeakerId);
@@ -216,6 +216,7 @@ namespace os.Services
                 cmd1.Parameters.AddWithValue("@DateRecorded", speakerIn.DateRecorded);
                 cmd1.Parameters.AddWithValue("@SpeakerStatus", speakerIn.SpeakerStatus);
                 cmd1.Parameters.AddWithValue("@Visibility", speakerIn.Visibility);
+                cmd1.Parameters.AddWithValue("@SecretFileName", speakerIn.SecretFileName);
 
                 MySqlDataReader reader1 = cmd1.ExecuteReader();
                 reader1.Close();
@@ -244,33 +245,40 @@ namespace os.Services
             try
             {
                 using var conn1 = new MySqlConnection(Environment.GetEnvironmentVariable("DbConnectionString"));
-                string command = "INSERT INTO os.Speakers (FirstName, LastName, Description, NumUpVotes, DateRecorded, UploadDate, UploadedBy, SpeakerStatus, DisplayFileName, SecretFileName, UploadedById, Visibility) " +
-                    "VALUES (@FirstName, @LastName, @Description, @NumUpVotes, @DateRecorded, @UploadDate, @UploadedBy, @SpeakerStatus, @DisplayFileName, @SecretFileName, @UploadedById, @Visibility)";
                 conn1.Open();
-                MySqlCommand cmd1 = new MySqlCommand(command, conn1);
-                cmd1.Parameters.AddWithValue("@FirstName", speakerIn.FirstName);
-                cmd1.Parameters.AddWithValue("@LastName", speakerIn.LastName);
-                cmd1.Parameters.AddWithValue("@Description", speakerIn.Description);
-                cmd1.Parameters.AddWithValue("@NumUpVotes", speakerIn.NumUpVotes);
-                cmd1.Parameters.AddWithValue("@DateRecorded", speakerIn.DateRecorded);
-                cmd1.Parameters.AddWithValue("@UploadDate", speakerIn.UploadDate);
-                cmd1.Parameters.AddWithValue("@UploadedBy", speakerIn.UploadedBy);
-                cmd1.Parameters.AddWithValue("@SpeakerStatus", speakerIn.SpeakerStatus);
-                cmd1.Parameters.AddWithValue("@DisplayFileName", speakerIn.DisplayFileName);
-                cmd1.Parameters.AddWithValue("@SecretFileName", speakerIn.SecretFileName);
-                cmd1.Parameters.AddWithValue("@UploadedById", speakerIn.UploadedById);
-                cmd1.Parameters.AddWithValue("@Visibility", speakerIn.Visibility);
-                newSpeakerId = Convert.ToInt32(cmd1.ExecuteScalar());
 
-                MySqlDataReader reader1 = cmd1.ExecuteReader();
-                reader1.Close();
+                // First, execute the INSERT statement
+                string insertCommand = "INSERT INTO os.Speakers (FirstName, LastName, Description, NumUpVotes, DateRecorded, UploadDate, UploadedBy, SpeakerStatus, DisplayFileName, SecretFileName, UploadedById, Visibility) " +
+                    "VALUES (@FirstName, @LastName, @Description, @NumUpVotes, @DateRecorded, @UploadDate, @UploadedBy, @SpeakerStatus, @DisplayFileName, @SecretFileName, @UploadedById, @Visibility)";
+
+                MySqlCommand insertCmd = new MySqlCommand(insertCommand, conn1);
+                insertCmd.Parameters.AddWithValue("@FirstName", speakerIn.FirstName);
+                insertCmd.Parameters.AddWithValue("@LastName", speakerIn.LastName);
+                insertCmd.Parameters.AddWithValue("@Description", speakerIn.Description);
+                insertCmd.Parameters.AddWithValue("@NumUpVotes", speakerIn.NumUpVotes);
+                insertCmd.Parameters.AddWithValue("@DateRecorded", speakerIn.DateRecorded);
+                insertCmd.Parameters.AddWithValue("@UploadDate", speakerIn.UploadDate);
+                insertCmd.Parameters.AddWithValue("@UploadedBy", speakerIn.UploadedBy);
+                insertCmd.Parameters.AddWithValue("@SpeakerStatus", speakerIn.SpeakerStatus);
+                insertCmd.Parameters.AddWithValue("@DisplayFileName", speakerIn.DisplayFileName);
+                insertCmd.Parameters.AddWithValue("@SecretFileName", speakerIn.SecretFileName);
+                insertCmd.Parameters.AddWithValue("@UploadedById", speakerIn.UploadedById);
+                insertCmd.Parameters.AddWithValue("@Visibility", speakerIn.Visibility);
+
+                // Execute the INSERT command
+                insertCmd.ExecuteNonQuery();
+
+                // Now get the last inserted ID using a separate command
+                MySqlCommand getIdCmd = new MySqlCommand("SELECT LAST_INSERT_ID()", conn1);
+                newSpeakerId = Convert.ToInt32(getIdCmd.ExecuteScalar());
+
                 conn1.Close();
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.ToString());
             }
-            
+
             return newSpeakerId;
         }
         public string SpeakerDetailsString(SpeakerModel speakerIn)

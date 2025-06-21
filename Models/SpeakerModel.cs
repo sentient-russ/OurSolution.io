@@ -33,7 +33,7 @@ namespace os.Models
         [DisplayName("Description:")]
         [DataType(DataType.Text)]
         [StringLength(500, MinimumLength = 1)]
-        public string? Description { get; set; }
+        public string? Description { get; set; } = "Story, ??mins";
 
         [DisplayName("Up-Votes:")]
         public int? NumUpVotes { get; set; }
@@ -41,7 +41,7 @@ namespace os.Models
         [DisplayName("Date Recorded:")]
         [DisplayFormat(DataFormatString = "{0:yyyy-MM-dd}", ApplyFormatInEditMode = true)]
         [DataType(DataType.Date)]
-        public DateTime? DateRecorded { get; set; }
+        public DateTime? DateRecorded { get; set; } = DateTime.Now;
 
         [DisplayName("Date Uploaded:")]
         [DisplayFormat(DataFormatString = "{0:yyyy-MM-dd}", ApplyFormatInEditMode = true)]

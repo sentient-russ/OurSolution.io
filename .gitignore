@@ -484,7 +484,7 @@ $RECYCLE.BIN/
 *.swp
 
 # site javascript
-site.js
+#site.js
 
 # file uploads folder container speakers
 wwwroot/uploads/*

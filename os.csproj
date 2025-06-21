@@ -46,7 +46,6 @@
 
   <ItemGroup>
     <Folder Include="tmp\" />
-    <Folder Include="Views\Shared\" />
     <Folder Include="wwwroot\css\" />
     <Folder Include="wwwroot\lib\bootstrap\" />
     <Folder Include="wwwroot\lib\bootstrap\dist\js\" />
@@ -56,6 +55,7 @@
     <Folder Include="wwwroot\lib\jquery\" />
     <Folder Include="wwwroot\lib\jquery\dist\" />
     <Folder Include="wwwroot\transcriptions\" />
+    <Folder Include="wwwroot\uploads\" />
   </ItemGroup>
 
 </Project>

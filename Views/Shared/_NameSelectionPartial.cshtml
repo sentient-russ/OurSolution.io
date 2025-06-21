@@ -1,0 +1,91 @@
+@model os.Models.NameSelectionModel
+
+<div id="nameSelectionContainer" class="card mt-3 mb-3">
+    <div class="card-header">
+        <h5>Select Names to Remove</h5>
+        <p class="mb-0">The following names were found in your audio. Select which ones you want to remove.</p>
+    </div>
+    <div class="card-body">
+        @if (Model?.Names?.Count > 0)
+        {
+            <div class="mb-3">
+                <div class="form-check">
+                    <input type="checkbox" id="selectAllNames" class="form-check-input" checked />
+                    <label class="form-check-label" for="selectAllNames">Select/Deselect All</label>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th style="width: 50px;">Select</th>
+                            <th>Name</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (int i = 0; i < Model.Names.Count; i++)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input name-checkbox" 
+                                               name="Names[@i].Selected" id="Names_@(i)_Selected" 
+                                               value="true" checked />
+                                        <input type="hidden" name="Names[@i].Name" value="@Model.Names[i].Name" />
+                                        <input type="hidden" name="Names[@i].Start" value="@Model.Names[i].Start" />
+                                        <input type="hidden" name="Names[@i].End" value="@Model.Names[i].End" />
+                                    </div>
+                                </td>
+                                <td>@Model.Names[i].Name</td>
+                                <td>@Model.Names[i].Start</td>
+                                <td>@Model.Names[i].End</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <div class="text-center mt-3">
+                <button type="button" id="processNamesButton" class="btn edit-btn">Process Selected Names</button>
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-info">
+                No names were detected in the audio.
+            </div>
+        }
+    </div>
+</div>
+
+<script>
+    $(document).ready(function() {
+        // Handle "Select All" checkbox
+        $("#selectAllNames").change(function() {
+            $(".name-checkbox").prop('checked', $(this).prop('checked'));
+        });
+        
+        // Update "Select All" if any individual checkbox changes
+        $(".name-checkbox").change(function() {
+            if (!$(this).prop('checked')) {
+                $("#selectAllNames").prop('checked', false);
+            } else {
+                // Check if all boxes are checked
+                if ($(".name-checkbox:checked").length === $(".name-checkbox").length) {
+                    $("#selectAllNames").prop('checked', true);
+                }
+            }
+        });
+
+        // Process button click handler
+        $("#processNamesButton").click(function() {
+            // Show processing UI
+            $("#nameSelectionContainer").hide();
+            $("#processingStatusContainer").show();
+            
+            // Submit the form
+            $("#uploadSpeakerForm").submit();
+        });
+    });
+</script>

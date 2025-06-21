@@ -100,10 +100,65 @@ namespace os.Controllers
         [HttpPost]
         [Authorize(Roles = "Administrator")]
         [RequestSizeLimit(700 * 1024 * 1024)] // 700MB
-        public async Task<IActionResult> UploadSpeaker([Bind("SpeakerId, FileName, FirstName, LastName, Description, NumUpVotes, DateRecorded, UploadDate, UploadedBy, SpeakerStatus, Visibility, ReplacedNames, FormFile")] SpeakerModel newSpeakerIn)
+        public async Task<IActionResult> UploadSpeaker([Bind("SpeakerId, FileName, FirstName, LastName, Description, NumUpVotes, DateRecorded, UploadDate, UploadedBy, SpeakerStatus, Visibility, ReplacedNames, FormFile")] SpeakerModel newSpeakerIn, List<NameItem> Names = null, int? existingSpeakerId = null)
         {
             var LoggedInAppUser = await _userManager.GetUserAsync(User);
 
+            // This code block is skipped on the first call and run on a subsequent call once the user has been prompted to make name removal selections
+            if (Names != null && existingSpeakerId.HasValue)
+            {
+                try
+                {
+                    // Get the existing speaker data
+                    SpeakerModel existingSpeaker = _dbConnectionService.GetSpeakerById(existingSpeakerId.Value);
+                    if (existingSpeaker == null)
+                    {
+                        ViewBag.StatusMessage = "Speaker not found.";
+                        return View("AddSpeaker");
+                    }
+
+                    // Convert the selected names to CutSpeakerModel
+                    var selectedNames = Names
+                        .Where(n => n.Selected)
+                        .Select(n => new CutSpeakerModel
+                        {
+                            Name = n.Name,
+                            Start = n.Start,
+                            End = n.End
+                        })
+                        .ToList();
+
+
+                    // Process the audio file
+                    string? anonymizedFileName = await _audioReplacementService.ReplaceAudioAsync(existingSpeakerId.Value, selectedNames);
+
+                    // Save the anonymized file name to the database
+                    if (!string.IsNullOrEmpty(anonymizedFileName))
+                    {
+                        SpeakerModel updatedSpeaker = _dbConnectionService.GetSpeakerById(existingSpeakerId.Value);
+                        // Get just the filename part
+                        string fileName = Path.GetFileName(anonymizedFileName);
+                        updatedSpeaker.SecretFileName = fileName;
+                        _dbConnectionService.UpdateSpeakerDetails(updatedSpeaker);
+                        
+                        ViewBag.StatusMessage = "File processed successfully. Names have been replaced.";
+                        return RedirectToAction("Index");
+                    }
+                    else
+                    {
+                        ViewBag.StatusMessage = "There was an error processing the audio.";
+                        return View("AddSpeaker");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error during audio replacement: {ex.Message}");
+                    ViewBag.StatusMessage = "Error replacing names: " + ex.Message;
+                    return View("AddSpeaker");
+                }
+            }
+
+            // Normal file upload path
             // reformat names of the speaker and uploading user to capital first name letter followed by lowercase and the same for the speaker.
             string speakerFirstNameInitial = newSpeakerIn.FirstName.Substring(0, 1).ToUpper();
             string speakerFirstNamePostFix = newSpeakerIn.FirstName.Substring(1).ToLower();
@@ -202,40 +257,50 @@ namespace os.Controllers
                     return View("AddSpeaker");
                 }
 
-                // If name replacement is requested, process in the background
+                // Check if we're in the name selection phase
                 if (newSpeakerIn.ReplacedNames)
                 {
-                    // Start the audio replacement process in the background
-                    _ = Task.Run(async () =>
+                    try
                     {
-                        try
+                        // Get names for selection and pass to view
+                        var namesResult = await _audioReplacementService.GetNamesForSelectionAsync(newSpeakerId);
+                        
+                        if (namesResult.Names.Count > 0)
                         {
-                            // Process the audio file
-                            string? anonymizedFileName = await _audioReplacementService.ReplaceAudioAsync(newSpeakerId);
-
-                            // Save the anonymized file name to the database
-                            if (!string.IsNullOrEmpty(anonymizedFileName))
+                            var nameSelectionModel = new NameSelectionModel
                             {
-                                SpeakerModel updatedSpeaker = _dbConnectionService.GetSpeakerById(newSpeakerId);
-                                updatedSpeaker.SecretFileName = anonymizedFileName;
-                                _dbConnectionService.UpdateSpeakerDetails(updatedSpeaker);
-                            }
+                                SpeakerId = newSpeakerId,
+                                SpeakerName = $"{newSpeakerIn.FirstName} {newSpeakerIn.LastName}",
+                                Names = namesResult.Names.Select(n => new NameItem
+                                {
+                                    Name = n.Name,
+                                    Start = n.Start,
+                                    End = n.End,
+                                    Selected = true
+                                }).ToList()
+                            };
+                            
+                            ViewBag.NameSelectionModel = nameSelectionModel;
+                            ViewBag.StatusMessage = "File uploaded successfully. Please select which names you want to remove.";
+                            return View("AddSpeaker", new SpeakerModel { SpeakerId = newSpeakerId });
                         }
-                        catch (Exception ex)
+                        else
                         {
-                            // Log the error but don't interrupt the user experience
-                            Console.WriteLine($"Error during audio replacement: {ex.Message}");
+                            ViewBag.StatusMessage = "File uploaded successfully, but no names were detected to remove.";
+                            return RedirectToAction("Index");
                         }
-                    });
-
-                    ViewBag.StatusMessage = "File uploaded successfully. Audio processing for name replacement is running in the background and may take up to 15 minutes to complete.";
+                    }
+                    catch (Exception ex)
+                    {
+                        ViewBag.StatusMessage = "Error analyzing audio for names: " + ex.Message;
+                        return View("AddSpeaker");
+                    }
                 }
                 else
                 {
                     ViewBag.StatusMessage = "File uploaded successfully.";
+                    return RedirectToAction("Index");
                 }
-
-                return RedirectToAction("Index");
             }
             else
             {

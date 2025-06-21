@@ -2,6 +2,7 @@
 @{
     ViewData["Title"] = "Add Speaker";
     string? statusMessage = ViewBag.StatusMessage;
+    var nameSelectionModel = ViewBag.NameSelectionModel as os.Models.NameSelectionModel;
 }
 <div class="edit-container-row">
     <div class="edit-container-column">
@@ -35,7 +36,7 @@
                 <span asp-validation-for="Description" class="text-danger"></span>
             </div>
             <div class="form-group" style="margin-top: 5px;">
-                <label asp-for="DateRecorded" class="control-label cust-label"></label>
+                <label asp-for="DateRecorded" class="control-label cust-label">Date Recoded (Use today's date if unknown.)</label>
                 <input asp-for="DateRecorded" class="form-control" />
                 <span asp-validation-for="DateRecorded" class="text-danger"></span>
             </div>
@@ -44,7 +45,7 @@
                 <input asp-for="UploadDate" class="form-control" readonly />
                 <span asp-validation-for="UploadDate" class="text-danger"></span>
             </div>
-            <div class="form-group" style="margin-top: 5px;">
+            <div class="form-group" style="margin-top: 5px;" hidden>
                 <label asp-for="SpeakerStatus" class="control-label cust-label"></label>
                 <select asp-for="SpeakerStatus" class="form-drop-down form-select" aria-required="true">
                     <option default id="Active">Active</option>
@@ -52,7 +53,7 @@
                 </select>
                 <span asp-validation-for="SpeakerStatus" class="text-danger"></span>
             </div>
-            <div class="form-group" style="margin-top: 5px;">
+            <div class="form-group" style="margin-top: 5px;" hidden>
                 <label asp-for="Visibility" class="control-label cust-label"></label>
                 <select asp-for="Visibility" class="form-drop-down form-select" aria-required="true">
                     <option default id="Private">Private</option>
@@ -69,7 +70,7 @@
                 <input asp-for="ReplacedNames" type="checkbox" class="form-check-input" id="ReplacedNames" />
                 <label asp-for="ReplacedNames" class="form-check-label control-label cust-label">Replace Names</label>
                 <span asp-validation-for="ReplacedNames" class="text-danger"></span>
-                <small class="form-text text-muted d-block">Note: When enabled, audio processing will take approximately 15 minutes.</small>
+                <small class="form-text text-muted d-block">Note: When enabled, audio processing will take approximately 20 minutes.</small>
             </div>
 
             <!-- Progress bar container (hidden by default) -->
@@ -92,6 +93,67 @@
                 <input type="submit" value="Submit" class="edit-btn" id="submitButton" />
             </div>
         </form>
+
+        @if (nameSelectionModel != null && nameSelectionModel.Names.Any())
+        {
+            <div id="nameSelectionWrapper" class="mt-4">
+                <form asp-action="UploadSpeaker" method="post" id="nameSelectionForm">
+                    <div id="nameSelectionContainer" class="card">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">Select Names to Remove</h5>
+                            <p class="mb-0">We found the following names in your audio. Select which ones you want to remove.</p>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input type="checkbox" id="selectAllNames" class="form-check-input" checked />
+                                    <label class="form-check-label" for="selectAllNames">Select/Deselect All</label>
+                                </div>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 50px;">Select</th>
+                                            <th>Name</th>
+                                            <th>Start Time</th>
+                                            <th>End Time</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @for (int i = 0; i < nameSelectionModel.Names.Count; i++)
+                                        {
+                                            <tr>
+                                                <td>
+                                                    <div class="form-check">
+                                                        <input type="checkbox" class="form-check-input name-checkbox"
+                                                               name="Names[@i].Selected" id="Names_@(i)_Selected"
+                                                               value="true" checked />
+                                                        <!-- Add this hidden field to ensure false value is sent when unchecked -->
+                                                        <input type="hidden" name="Names[@i].Selected" value="false" />
+                                                        <input type="hidden" name="Names[@i].Name" value="@nameSelectionModel.Names[i].Name" />
+                                                        <input type="hidden" name="Names[@i].Start" value="@nameSelectionModel.Names[i].Start" />
+                                                        <input type="hidden" name="Names[@i].End" value="@nameSelectionModel.Names[i].End" />
+                                                    </div>
+                                                </td>
+                                                <td>@nameSelectionModel.Names[i].Name</td>
+                                                <td>@nameSelectionModel.Names[i].Start</td>
+                                                <td>@nameSelectionModel.Names[i].End</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="card-footer d-flex justify-content-between">
+                            @* <button type="button" id="cancelNameSelection" class="btn btn-secondary">Cancel Processing</button> *@
+                            <input type="hidden" name="existingSpeakerId" value="@nameSelectionModel.SpeakerId" />
+                            <button type="submit" id="processNamesButton" class="btn btn-outline-secondary">Process Selected Names</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        }
     </div>
 </div>
 
@@ -101,25 +163,56 @@
     }
 
     <script>
-        $(document).ready(function() {
+                $(document).ready(function() {
             const uploadForm = $("#uploadSpeakerForm");
+            const nameSelectionForm = $("#nameSelectionForm");
             const submitButton = $("#submitButton");
+            const processNamesButton = $("#processNamesButton");
+            const cancelNameSelection = $("#cancelNameSelection");
             const replacedNamesCheckbox = $("#ReplacedNames");
             const processingContainer = $("#processingStatusContainer");
             const progressBar = $("#processingProgressBar");
             const statusText = $("#processingStatusText");
             const timeRemainingText = $("#timeRemainingText");
             const formFile = $("#FormFile");
+            const nameSelectionContainer = $("#nameSelectionContainer");
+            const nameSelectionWrapper = $("#nameSelectionWrapper");
+            const backButton = $(".edit-btn:contains('Back')");
 
             // Start time for the processing (will be set when form is submitted)
             let processingStartTime;
-            // Total estimated processing time in seconds (15 minutes = 900 seconds)
-            const totalProcessingTime = 900;
+            // Total estimated processing time in seconds (20 minutes = 1200 seconds)
+            const totalProcessingTime = 1200;
 
+            // Hide processing container and submit button when name selection is visible
+            if (nameSelectionWrapper.is(":visible")) {
+                processingContainer.hide();
+                submitButton.hide();
+                backButton.hide();
+            }
+
+            // Handle "Select All" checkbox for names
+            $("#selectAllNames").change(function() {
+                $(".name-checkbox").prop('checked', $(this).prop('checked'));
+            });
+
+            // Update "Select All" if any individual checkbox changes
+            $(".name-checkbox").change(function() {
+                if (!$(this).prop('checked')) {
+                    $("#selectAllNames").prop('checked', false);
+                } else {
+                    // Check if all boxes are checked
+                    if ($(".name-checkbox:checked").length === $(".name-checkbox").length) {
+                        $("#selectAllNames").prop('checked', true);
+                    }
+                }
+            });
+
+            // Initial upload form submission
             uploadForm.on("submit", function(e) {
-                // Only show progress if the "Replace Names" option is checked and a file is selected
+                // Regular upload with "Replace Names" checked but no names selected yet
                 if (replacedNamesCheckbox.is(":checked") && formFile[0].files.length > 0) {
-                    // Show the processing container
+                    // Show the processing container for initial upload/analysis
                     processingContainer.show();
 
                     // Set the start time
@@ -134,9 +227,46 @@
 
                     // Set an interval to update the progress regularly
                     const progressInterval = setInterval(updateProgress, 1000);
-
-                    // Store the interval ID in sessionStorage so we can clear it if needed
                     sessionStorage.setItem("progressInterval", progressInterval);
+                }
+            });
+
+            // Name selection form submission
+            nameSelectionForm.on("submit", function(e) {
+                e.preventDefault();
+
+                // Show processing UI with 90% completion
+                processingContainer.show();
+                progressBar.css("width", "90%");
+                progressBar.attr("aria-valuenow", 90);
+                progressBar.text("90%");
+                statusText.text("Finalizing processed audio...");
+
+                // Disable the process button to prevent multiple submissions
+                processNamesButton.prop("disabled", true);
+                $(processNamesButton).text("Processing...");
+
+                // Set the start time
+                processingStartTime = new Date();
+
+                // Calculate remaining time (10% of total)
+                const remainingSeconds = totalProcessingTime * 0.1;
+                timeRemainingText.text(formatTimeRemaining(remainingSeconds));
+
+                // Set an interval to update the progress regularly
+                const progressInterval = setInterval(updateProgress, 1000);
+                sessionStorage.setItem("progressInterval", progressInterval);
+
+                // Submit the form after a short delay to allow the UI to update
+                setTimeout(() => {
+                    this.submit();
+                }, 100);
+            });
+
+            // Cancel button click handler
+            cancelNameSelection.on("click", function() {
+                if (confirm("Are you sure you want to cancel the name replacement process? The speaker will be uploaded without replacing names.")) {
+                    window.location.href = "@Url.Action("ViewSpeakers", "Admin")";
                 }
             });
 
@@ -158,16 +288,28 @@
                 const remainingSeconds = totalProcessingTime - elapsedTime;
 
                 // Update status messages based on progress
-                if (progressPercent < 10) {
-                    statusText.text("Uploading audio file...");
-                } else if (progressPercent < 30) {
-                    statusText.text("Analyzing audio for personal names...");
-                } else if (progressPercent < 60) {
-                    statusText.text("Processing audio segments...");
-                } else if (progressPercent < 90) {
-                    statusText.text("Replacing personal names in audio...");
+                if (nameSelectionWrapper.is(":visible")) {
+                    // We're in the name processing phase
+                    if (progressPercent < 30) {
+                        statusText.text("Processing audio segments...");
+                    } else if (progressPercent < 70) {
+                        statusText.text("Replacing personal names in audio...");
+                    } else {
+                        statusText.text("Finalizing processed audio...");
+                    }
                 } else {
-                    statusText.text("Finalizing processed audio...");
+                    // Initial upload phase
+                    if (progressPercent < 10) {
+                        statusText.text("Uploading audio file...");
+                    } else if (progressPercent < 30) {
+                        statusText.text("Analyzing audio for personal names...");
+                    } else if (progressPercent < 60) {
+                        statusText.text("Processing audio segments...");
+                    } else if (progressPercent < 90) {
+                        statusText.text("Preparing name selection options...");
+                    } else {
+                        statusText.text("Finalizing analysis...");
+                    }
                 }
 
                 // Format and display time remaining
