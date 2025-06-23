@@ -63,7 +63,6 @@ namespace os.Services
         /// </summary>
         public enum TranscriptionStrategy
         {
-            OpenAIWhisper,
             FasterWhisper,
             WhisperCpp
         }

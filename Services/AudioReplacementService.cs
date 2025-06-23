@@ -1,14 +1,15 @@
 ﻿using System.Diagnostics;
-using NAudio.Wave;
-using NAudio.Lame;
 using System.IO;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Diagnostics.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Text;
+using FFMpegCore;
+using FFMpegCore.Pipes;
+using FFMpegCore.Enums;
+using FFMpegCore.Arguments;
+using FFMpegCore.Extend;
 
 namespace os.Services
 {
@@ -33,10 +34,10 @@ namespace os.Services
             string transcriptionsFolder = Path.Combine("wwwroot", "transcriptions");
             string filePath = Path.Combine(transcriptionsFolder, fileName);
 
-            if (!System.IO.File.Exists(filePath))
+            if (!File.Exists(filePath))
                 throw new FileNotFoundException($"Transcription file not found: {filePath}");
 
-            return await System.IO.File.ReadAllTextAsync(filePath);
+            return await File.ReadAllTextAsync(filePath);
         }
 
         // Add a new method to extract names without processing them
@@ -48,21 +49,21 @@ namespace os.Services
             {
                 // Check if the audio file needs size reduction
                 string originalMp3Path = Path.Combine("wwwroot", "uploads", speaker.SecretFileName);
-                
+
                 // Reduce file size if needed (max 25MB)
                 string processedFilePath = await ReduceAudioFileSize(originalMp3Path);
-                
+
                 // If file was reduced, temporarily update the speaker's file reference
                 string originalFileName = speaker.SecretFileName;
                 bool wasReduced = processedFilePath != originalMp3Path;
-                
+
                 if (wasReduced)
                 {
                     Debug.WriteLine($"Audio file was reduced in size for transcription");
                     // Update speaker with reduced file path (just for transcription)
                     speaker.SecretFileName = Path.GetFileName(processedFilePath);
                 }
-                
+
                 try
                 {
                     // Perform transcription with the potentially reduced file
@@ -75,7 +76,7 @@ namespace os.Services
                     if (wasReduced)
                     {
                         speaker.SecretFileName = originalFileName;
-                        
+
                         // Clean up the temporary reduced file if it's in the uploads folder
                         if (processedFilePath.Contains("_reduced") && File.Exists(processedFilePath))
                         {
@@ -121,9 +122,7 @@ namespace os.Services
             }
 
             // Load the transcript from memory
-            // fileName = "Adam_R_1750468671654_transcript.txt";
             string fullTranscriptText = await LoadTranscriptionFile(fileName);
-
 
             // Extract only the segments part (everything after "## Segments")
             string transcriptContext = "";
@@ -211,12 +210,12 @@ namespace os.Services
                     return string.Empty;
                 }
 
-                // FIXED: Use only the selected names, don't fetch all names if selectedNames is empty
+                // Use only the selected names, don't fetch all names if selectedNames is empty
                 List<CutSpeakerModel> sanitizedNames = selectedNames ?? new List<CutSpeakerModel>();
-                
+
                 Debug.WriteLine($"Processing {sanitizedNames.Count} names selected by user");
 
-                if (!sanitizedNames.Any()) 
+                if (!sanitizedNames.Any())
                 {
                     Debug.WriteLine("No names found to process");
                     return string.Empty;
@@ -226,42 +225,42 @@ namespace os.Services
                 string originalMp3Path = Path.Combine("wwwroot", "uploads", speaker.SecretFileName);
                 string replacementAudioPath = Path.Combine("wwwroot", "sounds", "replacement_audio.mp3");
                 string outputMp3Path = Path.Combine("wwwroot", "uploads", $"anonymized_{speaker.SecretFileName}");
-                
+
                 // Create a debug folder to save segments for inspection
                 string segmentsFolder = Path.Combine("wwwroot", "uploads", "segments", speakerId.ToString());
-                
-                // FIXED: Ensure directory exists with proper permissions
+
+                // Ensure directory exists with proper permissions
                 if (!Directory.Exists(segmentsFolder))
                 {
                     Directory.CreateDirectory(segmentsFolder);
                 }
-                
+
                 // Validate input files
                 if (!File.Exists(originalMp3Path) || !File.Exists(replacementAudioPath))
                 {
-                    Debug.WriteLine(!File.Exists(originalMp3Path) 
-                        ? $"Original audio file not found: {originalMp3Path}" 
+                    Debug.WriteLine(!File.Exists(originalMp3Path)
+                        ? $"Original audio file not found: {originalMp3Path}"
                         : $"Replacement audio file not found: {replacementAudioPath}");
                     return string.Empty;
                 }
 
                 // Analyze the replacement audio file to get its volume level
-                float replacementVolumeLevel = GetAudioVolumeLevel(replacementAudioPath);
+                float replacementVolumeLevel = await GetAudioVolumeLevel(replacementAudioPath);
                 Debug.WriteLine($"Replacement audio volume level: {replacementVolumeLevel}");
-                
+
                 // Analyze the original audio to get its volume level
-                float originalVolumeLevel = GetAudioVolumeLevel(originalMp3Path);
+                float originalVolumeLevel = await GetAudioVolumeLevel(originalMp3Path);
                 Debug.WriteLine($"Original audio volume level: {originalVolumeLevel}");
-                
+
                 // Calculate volume adjustment factor (how much to amplify or reduce)
-                float volumeAdjustmentFactor = replacementVolumeLevel > 0 && originalVolumeLevel > 0 
-                    ? replacementVolumeLevel / originalVolumeLevel 
+                float volumeAdjustmentFactor = replacementVolumeLevel > 0 && originalVolumeLevel > 0
+                    ? replacementVolumeLevel / originalVolumeLevel
                     : 1.0f;
-                
+
                 Debug.WriteLine($"Volume adjustment factor: {volumeAdjustmentFactor}");
 
                 // Sort names by start time to ensure proper sequential processing
-                sanitizedNames = sanitizedNames.OrderBy(n => 
+                sanitizedNames = sanitizedNames.OrderBy(n =>
                 {
                     TryParseTimestamp(n.Start, out TimeSpan ts);
                     return ts;
@@ -275,7 +274,7 @@ namespace os.Services
 
                 try
                 {
-                    // FIXED: Create a metadata file with information about which names are being processed
+                    // Create a metadata file with information about which names are being processed
                     string metadataPath = Path.Combine(segmentsFolder, "processing_metadata.txt");
                     StringBuilder metadata = new StringBuilder();
                     metadata.AppendLine($"Processing started: {DateTime.Now}");
@@ -287,7 +286,7 @@ namespace os.Services
                         metadata.AppendLine($"  - {name.Name} (Start: {name.Start}, End: {name.End})");
                     }
                     await File.WriteAllTextAsync(metadataPath, metadata.ToString());
-                    
+
                     // Process each segment between names
                     for (int i = 0; i <= sanitizedNames.Count; i++)
                     {
@@ -337,17 +336,16 @@ namespace os.Services
 
                         // Extract audio segment before the name (or to the end of file)
                         string segmentPath = Path.Combine(tempDir, $"segment_{i}.mp3");
-                        bool segmentSuccess = await ExtractAudioSegment(originalMp3Path, segmentPath, startPos, endPos, volumeAdjustmentFactor);
-                        
+                        bool segmentSuccess = await ExtractAudioSegment(originalMp3Path, segmentPath, startPos, endPos);
+
                         if (segmentSuccess)
                         {
-                            // FIXED: Make sure we copy with proper permissions and handle any errors
                             try
                             {
                                 // Save a copy to the segments folder for inspection
                                 string savedSegmentPath = Path.Combine(segmentsFolder, $"segment_{i}.mp3");
                                 File.Copy(segmentPath, savedSegmentPath, true);
-                                
+
                                 audioSegments.Add(segmentPath);
                                 Debug.WriteLine($"Created segment {i}: {startPos} to {endPos?.ToString() ?? "end"}, saved to {savedSegmentPath}");
                             }
@@ -366,29 +364,29 @@ namespace os.Services
                                 return string.Empty; // No segments created, can't continue
                             }
                         }
-                        
+
                         // If this is a name, add the replacement audio and update position
                         if (i < sanitizedNames.Count)
                         {
                             // Add replacement audio for the name
                             string replacementSegmentPath = Path.Combine(tempDir, $"replacement_{i}.mp3");
                             File.Copy(replacementAudioPath, replacementSegmentPath, true);
-                            
+
                             try
                             {
                                 // Also save a copy to the segments folder
                                 string savedReplacementPath = Path.Combine(segmentsFolder, $"replacement_{i}.mp3");
                                 File.Copy(replacementAudioPath, savedReplacementPath, true);
-                                
+
                                 Debug.WriteLine($"Added replacement audio at position {i}, saved to {savedReplacementPath}");
                             }
                             catch (Exception ex)
                             {
                                 Debug.WriteLine($"Error saving replacement copy: {ex.Message}");
                             }
-                            
+
                             audioSegments.Add(replacementSegmentPath);
-                            
+
                             // Adjust the end timestamp
                             if (!TryParseTimestamp(sanitizedNames[i].End, out TimeSpan tempCurrentPos))
                             {
@@ -398,15 +396,12 @@ namespace os.Services
                             currentPosition = tempCurrentPos.Add(TimeSpan.FromSeconds(adjustEndsBy)); // Adjust end timestamp
                         }
                     }
-                    
+
                     // Combine all segments into the final output
                     Debug.WriteLine($"Combining {audioSegments.Count} segments into final output...");
-                    bool combineSuccess = await CombineAudioParts(
-                        audioSegments.ToArray(), 
-                        outputMp3Path, 
-                        GetMp3Properties(originalMp3Path).BitrateKbps);
-                    
-                    // Save the combined WAV file for inspection
+                    bool combineSuccess = await CombineAudioParts(audioSegments.ToArray(), outputMp3Path);
+
+                    // Get the temporary combined WAV file path for inspection (though it should be deleted after combination)
                     string combinedWavPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName() + ".wav");
                     if (File.Exists(combinedWavPath))
                     {
@@ -421,11 +416,11 @@ namespace os.Services
                             Debug.WriteLine($"Error saving combined WAV: {ex.Message}");
                         }
                     }
-                        
-                    Debug.WriteLine(combineSuccess 
-                        ? $"Successfully created combined audio file: {outputMp3Path}" 
+
+                    Debug.WriteLine(combineSuccess
+                        ? $"Successfully created combined audio file: {outputMp3Path}"
                         : "Failed to combine audio segments");
-                    
+
                     // Create an info file with details about the processing
                     string infoFilePath = Path.Combine(segmentsFolder, "processing_info.txt");
                     StringBuilder info = new StringBuilder();
@@ -437,13 +432,13 @@ namespace os.Services
                     info.AppendLine($"Number of Names Processed: {sanitizedNames.Count}");
                     info.AppendLine($"Volume Adjustment Factor: {volumeAdjustmentFactor}");
                     info.AppendLine($"Names Processed:");
-                    
+
                     for (int i = 0; i < sanitizedNames.Count; i++)
                     {
                         var name = sanitizedNames[i];
-                        info.AppendLine($"  {i+1}. Name: {name.Name}, Start: {name.Start}, End: {name.End}");
+                        info.AppendLine($"  {i + 1}. Name: {name.Name}, Start: {name.Start}, End: {name.End}");
                     }
-                    
+
                     try
                     {
                         await File.WriteAllTextAsync(infoFilePath, info.ToString());
@@ -452,7 +447,7 @@ namespace os.Services
                     {
                         Debug.WriteLine($"Error writing info file: {ex.Message}");
                     }
-                    
+
                     return combineSuccess ? outputMp3Path : (audioSegments.Count > 0 ? audioSegments[0] : string.Empty);
                 }
                 finally
@@ -479,39 +474,56 @@ namespace os.Services
         }
 
         /// <summary>
-        /// Gets the average volume level of an MP3 file
+        /// Gets the average volume level of an audio file using FFMpeg
         /// </summary>
-        private float GetAudioVolumeLevel(string filePath)
+        private async Task<float> GetAudioVolumeLevel(string filePath)
         {
             try
             {
-                using (var reader = new Mp3FileReader(filePath))
-                {
-                    // Convert to a format we can easily analyze
-                    using (var waveStream = WaveFormatConversionStream.CreatePcmStream(reader))
+                // Run FFMpeg with volumedetect filter to analyze audio volume
+                var outputBuilder = new StringBuilder();
+
+                // Create a temporary file path for null output
+                string tempOutputPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+
+                // Build the ffmpeg process correctly for FFMpegCore 5.2.0 using standard arguments
+                var ffmpegProcess = FFMpegArguments
+                    .FromFileInput(filePath)
+                    .OutputToFile(tempOutputPath, false, options =>
                     {
-                        // Read the entire file to calculate its average volume
-                        byte[] buffer = new byte[waveStream.Length];
-                        waveStream.Read(buffer, 0, buffer.Length);
+                        // Use WithCustomArgument for both filter and format options
+                        options.WithCustomArgument("-af volumedetect");
+                        options.WithCustomArgument("-f null");
+                    });
 
-                        // Convert bytes to samples
-                        int bytesPerSample = waveStream.WaveFormat.BitsPerSample / 8;
-                        int sampleCount = buffer.Length / bytesPerSample;
-                        
-                        // For simplicity, let's assume 16-bit samples (most common in MP3s)
-                        float sum = 0;
-                        for (int i = 0; i < buffer.Length; i += 2)
-                        {
-                            short sample = (short)((buffer[i + 1] << 8) | buffer[i]);
-                            float normalizedSample = Math.Abs(sample) / 32768f; // Normalize to 0.0-1.0
-                            sum += normalizedSample;
-                        }
+                // Capture output
+                StringBuilder errorOutput = new StringBuilder();
+                bool success = await ffmpegProcess
+                    .ProcessAsynchronously();
 
-                        float averageVolume = sum / (sampleCount / waveStream.WaveFormat.Channels);
-                        Debug.WriteLine($"Average volume for {Path.GetFileName(filePath)}: {averageVolume}");
-                        return averageVolume;
+                // Clean up temporary file if created
+                if (File.Exists(tempOutputPath))
+                {
+                    try { File.Delete(tempOutputPath); } catch { /* Ignore cleanup errors */ }
+                }
+
+                string output = errorOutput.ToString();
+
+                // Parse mean_volume from output
+                float meanVolume = 0.0f;
+                var meanMatch = System.Text.RegularExpressions.Regex.Match(output, @"mean_volume:\s+([-\d.]+)\s+dB");
+                if (meanMatch.Success && meanMatch.Groups.Count > 1)
+                {
+                    if (float.TryParse(meanMatch.Groups[1].Value, out float meanVolumeDb))
+                    {
+                        // Convert from dB to linear scale (normalized 0.0-1.0)
+                        // A volume of 0 dB is maximum, -6 dB is half volume, etc.
+                        meanVolume = (float)Math.Pow(10, meanVolumeDb / 20.0);
                     }
                 }
+
+                Debug.WriteLine($"Average volume for {Path.GetFileName(filePath)}: {meanVolume}");
+                return meanVolume;
             }
             catch (Exception ex)
             {
@@ -521,12 +533,10 @@ namespace os.Services
         }
 
         /// <summary>
-        /// Extracts a segment of audio from an MP3 file with optional volume adjustment
+        /// Extracts a segment of audio from an MP3 file using FFMpeg
         /// </summary>
-        private async Task<bool> ExtractAudioSegment(string sourceMp3Path, string outputMp3Path, TimeSpan startTime, TimeSpan? endTime = null, float volumeAdjustmentFactor = 1.0f)
+        private async Task<bool> ExtractAudioSegment(string sourceMp3Path, string outputMp3Path, TimeSpan startTime, TimeSpan? endTime = null)
         {
-            string tempWavPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName() + ".wav");
-
             try
             {
                 // Validate time parameters - ensure end time is after start time
@@ -539,148 +549,163 @@ namespace os.Services
                     Debug.WriteLine($"Adjusted to valid range: start={startTime}, end={endTime.Value}");
                 }
 
-                using (var reader = new Mp3FileReader(sourceMp3Path))
+                // Get media info to verify the file exists and has audio
+                var mediaInfo = await FFProbe.AnalyseAsync(sourceMp3Path);
+
+                // Check if the segment is empty
+                bool emptySegment = false;
+                if (endTime.HasValue)
                 {
-                    // Calculate bytes to skip to reach start position
-                    int bytesToSkip = (int)(reader.WaveFormat.AverageBytesPerSecond * startTime.TotalSeconds);
-
-                    // Create temporary WAV file
-                    using (var wavWriter = new WaveFileWriter(tempWavPath, reader.WaveFormat))
+                    double duration = (endTime.Value - startTime).TotalSeconds;
+                    if (duration <= 0)
                     {
-                        // Skip to start position
-                        long totalBytesSkipped = 0;
-                        byte[] skipBuffer = new byte[4096];
-                        int bytesRead;
-
-                        while (totalBytesSkipped < bytesToSkip &&
-                              (bytesRead = reader.Read(skipBuffer, 0, skipBuffer.Length)) > 0)
-                        {
-                            totalBytesSkipped += bytesRead;
-                        }
-
-                        // Read until the end of file or end time
-                        byte[] buffer = new byte[4096];
-                        long totalBytesRead = 0;
-                        long bytesToRead = endTime.HasValue
-                            ? (long)(reader.WaveFormat.AverageBytesPerSecond * (endTime.Value - startTime).TotalSeconds)
-                            : long.MaxValue;
-
-                        // Ensure we read at least some data (minimum segment size)
-                        if (bytesToRead <= 0)
-                        {
-                            bytesToRead = reader.WaveFormat.AverageBytesPerSecond; // Minimum 1 second of audio
-                            Debug.WriteLine($"Setting minimum segment size to {bytesToRead} bytes");
-                        }
-
-                        while ((bytesRead = reader.Read(buffer, 0, buffer.Length)) > 0)
-                        {
-                            if (endTime.HasValue && totalBytesRead + bytesRead > bytesToRead)
-                            {
-                                int bytesToWrite = (int)(bytesToRead - totalBytesRead);
-                                if (bytesToWrite > 0)
-                                {
-                                    wavWriter.Write(buffer, 0, bytesToWrite);
-                                }
-                                break;
-                            }
-
-                            wavWriter.Write(buffer, 0, bytesRead);
-                            totalBytesRead += bytesRead;
-
-                            if (endTime.HasValue && totalBytesRead >= bytesToRead)
-                            {
-                                break;
-                            }
-                        }
-                    }
-
-                    // Verify the WAV file has content before proceeding
-                    var tempWavInfo = new FileInfo(tempWavPath);
-                    if (tempWavInfo.Length <= 44) // WAV header is 44 bytes, so this would be an empty audio file
-                    {
-                        Debug.WriteLine($"Warning: Generated WAV file is empty or contains only a header. Adding 1 second of silence.");
-                        
-                        // Create a file with 1 second of silence instead
-                        using (var silenceWavWriter = new WaveFileWriter(tempWavPath, reader.WaveFormat))
-                        {
-                            int sampleRate = reader.WaveFormat.SampleRate;
-                            int channels = reader.WaveFormat.Channels;
-                            int bytesPerSample = reader.WaveFormat.BitsPerSample / 8;
-                            
-                            // Create 1 second of silence
-                            byte[] silence = new byte[sampleRate * channels * bytesPerSample];
-                            silenceWavWriter.Write(silence, 0, silence.Length);
-                        }
-                    }
-
-                    // Convert WAV to MP3 with appropriate bitrate
-                    using (var wavReader = new WaveFileReader(tempWavPath))
-                    using (var mp3Writer = new LameMP3FileWriter(outputMp3Path, wavReader.WaveFormat, GetMp3Properties(sourceMp3Path).BitrateKbps))
-                    {
-                        wavReader.CopyTo(mp3Writer);
+                        Debug.WriteLine($"Segment has no duration: start={startTime}, end={endTime.Value}");
+                        emptySegment = true;
                     }
                 }
 
-                Debug.WriteLine($"Created audio file: {outputMp3Path}");
-                return true;
+                if (emptySegment)
+                {
+                    // Create a 1-second silence segment
+                    return await CreateSilenceSegment(outputMp3Path, TimeSpan.FromSeconds(1));
+                }
+                else
+                {
+                    // Use FFMpegCore to extract segment
+                    var builder = FFMpegArguments.FromFileInput(sourceMp3Path, false, options =>
+                    {
+                        // Set start time
+                        options.Seek(startTime);
+
+                        // Set duration if end time is provided
+                        if (endTime.HasValue)
+                        {
+                            options.WithDuration(endTime.Value - startTime);
+                        }
+                    });
+
+                    // Set output format and codec options
+                    var result = await builder
+                        .OutputToFile(outputMp3Path, false, options =>
+                        {
+                            options.WithAudioCodec(AudioCodec.LibMp3Lame);
+                            options.WithAudioBitrate(128); // Default to 128kbps if we can't determine original
+
+                            // Try to maintain the original audio quality
+                            if (mediaInfo.PrimaryAudioStream != null)
+                            {
+                                // Get bitrate 
+                                if (mediaInfo.PrimaryAudioStream.BitRate > 0)
+                                {
+                                    int originalBitrate = (int)(mediaInfo.PrimaryAudioStream.BitRate / 1000);
+                                    if (originalBitrate > 0)
+                                    {
+                                        options.WithAudioBitrate(originalBitrate);
+                                    }
+                                }
+
+                                // Keep original audio channels and sample rate
+                                if (mediaInfo.PrimaryAudioStream.Channels > 0)
+                                {
+                                    options.WithCustomArgument($"-ac {mediaInfo.PrimaryAudioStream.Channels}");
+                                }
+
+                                if (mediaInfo.PrimaryAudioStream.SampleRateHz > 0)
+                                {
+                                    options.WithCustomArgument($"-ar {mediaInfo.PrimaryAudioStream.SampleRateHz}");
+                                }
+                            }
+                        })
+                        .ProcessAsynchronously();
+
+                    // Verify the file was created
+                    if (File.Exists(outputMp3Path) && new FileInfo(outputMp3Path).Length > 0)
+                    {
+                        Debug.WriteLine($"Created audio segment: {outputMp3Path}");
+                        return true;
+                    }
+                    else
+                    {
+                        Debug.WriteLine($"Failed to create segment or segment is empty: {outputMp3Path}");
+                        // If extraction failed, create a short silence segment
+                        return await CreateSilenceSegment(outputMp3Path, TimeSpan.FromSeconds(1));
+                    }
+                }
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"Error extracting audio segment: {ex.Message}");
                 Debug.WriteLine(ex.StackTrace);
-                return false;
-            }
-            finally
-            {
-                if (File.Exists(tempWavPath))
+
+                try
                 {
-                    try { File.Delete(tempWavPath); }
-                    catch (IOException ex) { Debug.WriteLine($"Warning: Could not delete temporary file {tempWavPath}: {ex.Message}"); }
+                    // If extraction fails, create a silence segment
+                    return await CreateSilenceSegment(outputMp3Path, TimeSpan.FromSeconds(1));
+                }
+                catch
+                {
+                    return false;
                 }
             }
         }
 
         /// <summary>
-        /// Adjusts the volume of audio samples in a buffer
+        /// Creates a silence segment of specified duration
         /// </summary>
-        private void AdjustVolumeInBuffer(byte[] buffer, int offset, int count, WaveFormat format, float volumeFactor)
+        private async Task<bool> CreateSilenceSegment(string outputPath, TimeSpan duration)
         {
-            if (format.BitsPerSample != 16)
+            try
             {
-                // Only supporting 16-bit for simplicity
-                Debug.WriteLine($"Volume adjustment only supports 16-bit audio, not {format.BitsPerSample}-bit");
-                return;
+                int durationMs = (int)duration.TotalMilliseconds;
+
+                // Use a direct command string approach instead of InputArgument or FromArguments
+                string tempScriptPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName() + ".txt");
+                string ffmpegArgs = $"-f lavfi -i anullsrc=r=44100:cl=stereo -t {duration.TotalSeconds} -c:a libmp3lame -b:a 128k \"{outputPath}\"";
+
+                // Execute the FFmpeg process directly
+                var processStartInfo = new ProcessStartInfo
+                {
+                    FileName = "ffmpeg",
+                    Arguments = ffmpegArgs,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+
+                using (var process = new Process { StartInfo = processStartInfo })
+                {
+                    process.Start();
+                    await process.WaitForExitAsync();
+
+                    // Check if the process was successful
+                    bool success = process.ExitCode == 0;
+
+                    if (success && File.Exists(outputPath))
+                    {
+                        Debug.WriteLine($"Created silence segment: {outputPath}");
+                        return true;
+                    }
+                    else
+                    {
+                        string error = await process.StandardError.ReadToEndAsync();
+                        Debug.WriteLine($"FFmpeg error: {error}");
+                        return false;
+                    }
+                }
             }
-            
-            // Process 16-bit samples
-            for (int i = offset; i < offset + count; i += 2)
+            catch (Exception ex)
             {
-                if (i + 1 >= buffer.Length) break;
-                
-                // Convert two bytes to a 16-bit sample
-                short sample = (short)((buffer[i + 1] << 8) | buffer[i]);
-                
-                // Apply volume adjustment
-                float adjustedSample = sample * volumeFactor;
-                
-                // Clip to valid range
-                if (adjustedSample > short.MaxValue) adjustedSample = short.MaxValue;
-                if (adjustedSample < short.MinValue) adjustedSample = short.MinValue;
-                
-                // Convert back to bytes
-                short adjustedSampleShort = (short)adjustedSample;
-                buffer[i] = (byte)(adjustedSampleShort & 0xFF);
-                buffer[i + 1] = (byte)((adjustedSampleShort >> 8) & 0xFF);
+                Debug.WriteLine($"Error creating silence segment: {ex.Message}");
+                return false;
             }
         }
 
         /// <summary>
-        /// Combines multiple MP3 files into a single file
+        /// Combines multiple audio files into a single file using FFMpeg
         /// </summary>
-        private async Task<bool> CombineAudioParts(string[] partPaths, string outputPath, int bitrateKbps)
+        private async Task<bool> CombineAudioParts(string[] partPaths, string outputPath)
         {
-            string tempCombinedWavPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName() + ".wav");
-            
             try
             {
                 // Check if all parts exist
@@ -692,119 +717,76 @@ namespace os.Services
                         return false;
                     }
                 }
-                
-                // Get format from first part
-                WaveFormat outputFormat;
-                using (var reader = new Mp3FileReader(partPaths[0]))
-                {
-                    outputFormat = reader.WaveFormat;
-                }
-                
-                // Combine all parts
-                using (var waveFileWriter = new WaveFileWriter(tempCombinedWavPath, outputFormat))
+
+                // Create a temporary concat file
+                string concatListPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName() + ".txt");
+                using (var writer = new StreamWriter(concatListPath))
                 {
                     foreach (string partPath in partPaths)
                     {
-                        using (var reader = new Mp3FileReader(partPath))
-                        {
-                            if (!reader.WaveFormat.Equals(outputFormat))
-                            {
-                                // Format conversion needed
-                                using (var resampler = new MediaFoundationResampler(reader, outputFormat))
-                                {
-                                    await CopyAudioToWriter(resampler, waveFileWriter);
-                                }
-                            }
-                            else
-                            {
-                                // Direct copy (same format)
-                                await CopyAudioToWriter(reader, waveFileWriter);
-                            }
-                        }
+                        // Format the path correctly for FFmpeg (escape single quotes and backslashes)
+                        string escapedPath = partPath.Replace("\\", "\\\\").Replace("'", "\\'");
+                        writer.WriteLine($"file '{escapedPath}'");
                     }
                 }
-                
-                // Convert to MP3
-                using (var wavReader = new WaveFileReader(tempCombinedWavPath))
-                using (var mp3Writer = new LameMP3FileWriter(outputPath, wavReader.WaveFormat, bitrateKbps))
+
+                try
                 {
-                    await wavReader.CopyToAsync(mp3Writer);
+                    // Get media info from the first file to set consistent output parameters
+                    var firstFileInfo = await FFProbe.AnalyseAsync(partPaths[0]);
+
+                    // Get the most common properties from all files
+                    int bitrate = 128; // Default
+                    int sampleRate = 44100; // Default
+                    int channels = 2; // Default stereo
+
+                    if (firstFileInfo.PrimaryAudioStream != null)
+                    {
+                        if (firstFileInfo.PrimaryAudioStream.BitRate > 0)
+                        {
+                            bitrate = (int)(firstFileInfo.PrimaryAudioStream.BitRate / 1000);
+                        }
+
+                        // Extract sample rate directly as int (not doing a boolean comparison)
+                        if (firstFileInfo.PrimaryAudioStream.SampleRateHz > 0)
+                        {
+                            sampleRate = firstFileInfo.PrimaryAudioStream.SampleRateHz;
+                        }
+
+                        if (firstFileInfo.PrimaryAudioStream.Channels > 0)
+                        {
+                            channels = firstFileInfo.PrimaryAudioStream.Channels;
+                        }
+                    }
+
+                    // Combine files using FFmpeg concat demuxer
+                    var result = await FFMpegArguments
+                        .FromFileInput(concatListPath, false, options => options.WithCustomArgument("-f concat -safe 0"))
+                        .OutputToFile(outputPath, true, options =>
+                        {
+                            options.WithAudioCodec(AudioCodec.LibMp3Lame);
+                            options.WithAudioBitrate(bitrate);
+                            options.WithCustomArgument($"-ar {sampleRate} -ac {channels}");
+                        })
+                        .ProcessAsynchronously();
+
+                    Debug.WriteLine($"Successfully created combined audio file: {outputPath}");
+                    return File.Exists(outputPath);
                 }
-                
-                Debug.WriteLine($"Successfully created combined audio file: {outputPath}");
-                return true;
+                finally
+                {
+                    // Clean up the concat file
+                    if (File.Exists(concatListPath))
+                    {
+                        File.Delete(concatListPath);
+                    }
+                }
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"Error combining audio files: {ex.Message}");
                 return false;
             }
-            finally
-            {
-                // Clean up
-                if (File.Exists(tempCombinedWavPath))
-                {
-                    //try { File.Delete(tempCombinedWavPath); }
-                    //catch (IOException ex) { Debug.WriteLine($"Warning: Could not delete temporary combined file: {ex.Message}"); }
-                }
-            }
-        }
-
-        /// <summary>
-        /// Helper method to copy audio data between streams
-        /// </summary>
-        private async Task CopyAudioToWriter(IWaveProvider reader, WaveFileWriter writer)
-        {
-            byte[] buffer = new byte[4096];
-            int bytesRead;
-            while ((bytesRead = reader.Read(buffer, 0, buffer.Length)) > 0)
-            {
-                writer.Write(buffer, 0, bytesRead);
-            }
-        }
-
-        /// <summary>
-        /// Gets basic properties of an MP3 file
-        /// </summary>
-        private Mp3FileProperties GetMp3Properties(string filePath)
-        {
-            var result = new Mp3FileProperties();
-
-            // Use NAudio to get duration and other properties
-            using (var reader = new Mp3FileReader(filePath))
-            {
-                result.DurationSeconds = reader.TotalTime.TotalSeconds;
-
-                // MP3 file readers don't expose bitrate directly through a property called AverageBitsPerSecond
-                // Instead, calculate it from the length and duration
-                if (reader.TotalTime.TotalSeconds > 0)
-                {
-                    // Calculate bitrate in kbps: file size in bits / duration in seconds / 1000
-                    long fileSizeInBits = new FileInfo(filePath).Length * 8;
-                    result.BitrateKbps = (int)(fileSizeInBits / reader.TotalTime.TotalSeconds / 1000);
-                }
-                else
-                {
-                    // Default to common bitrate if we can't calculate
-                    result.BitrateKbps = 128;
-                }
-
-                result.SampleRate = reader.WaveFormat.SampleRate;
-                result.Channels = reader.WaveFormat.Channels;
-            }
-
-            return result;
-        }
-
-        /// <summary>
-        /// Contains basic properties of an MP3 file
-        /// </summary>
-        private class Mp3FileProperties
-        {
-            public double DurationSeconds { get; set; }
-            public int BitrateKbps { get; set; }
-            public int SampleRate { get; set; }
-            public int Channels { get; set; }
         }
 
         /// <summary>
@@ -844,26 +826,26 @@ namespace os.Services
             // Check current file size
             var fileInfo = new FileInfo(sourceFilePath);
             long maxSizeBytes = maxSizeMB * 1024 * 1024;
-            
+
             // If file is already smaller than the limit, return the original path
             if (fileInfo.Length <= maxSizeBytes)
             {
                 Debug.WriteLine($"File already under size limit ({fileInfo.Length / (1024 * 1024)} MB)");
                 return sourceFilePath;
             }
-            
+
             // Create output path for reduced file
             string fileName = Path.GetFileNameWithoutExtension(sourceFilePath);
             string outputFilePath = Path.Combine(
                 Path.GetDirectoryName(sourceFilePath),
                 $"{fileName}_reduced.mp3");
-            
+
             // Get original audio properties
-            var originalProps = GetMp3Properties(sourceFilePath);
-            
+            var originalProps = await GetMp3Properties(sourceFilePath);
+
             // Start with a reasonable bitrate reduction and adjust as needed
             int[] bitratesToTry = { 128, 96, 64, 48, 32 };
-            
+
             foreach (int bitrate in bitratesToTry)
             {
                 try
@@ -873,49 +855,28 @@ namespace os.Services
                     {
                         continue;
                     }
-                    
+
                     Debug.WriteLine($"Attempting to reduce file with {bitrate} kbps bitrate");
-                    
-                    // Decode to WAV first
-                    string tempWavPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName() + ".wav");
-                    
-                    try
+
+                    // Transcode to lower bitrate MP3
+                    var result = await FFMpegArguments
+                        .FromFileInput(sourceFilePath)
+                        .OutputToFile(outputFilePath, true, options =>
+                        {
+                            options.WithAudioCodec(AudioCodec.LibMp3Lame);
+                            options.WithAudioBitrate(bitrate);
+                            options.WithCustomArgument("-q:a 5"); // Quality setting for VBR
+                        })
+                        .ProcessAsynchronously();
+
+                    // Check if the new file is under the size limit
+                    var reducedFileInfo = new FileInfo(outputFilePath);
+                    Debug.WriteLine($"Reduced file size: {reducedFileInfo.Length / (1024 * 1024)} MB");
+
+                    if (reducedFileInfo.Length <= maxSizeBytes)
                     {
-                        using (var reader = new Mp3FileReader(sourceFilePath))
-                        using (var waveWriter = new WaveFileWriter(tempWavPath, reader.WaveFormat))
-                        {
-                            byte[] buffer = new byte[4096];
-                            int bytesRead;
-                            while ((bytesRead = reader.Read(buffer, 0, buffer.Length)) > 0)
-                            {
-                                waveWriter.Write(buffer, 0, bytesRead);
-                            }
-                        }
-                        
-                        // Re-encode to MP3 with lower bitrate
-                        using (var reader = new WaveFileReader(tempWavPath))
-                        using (var writer = new LameMP3FileWriter(outputFilePath, reader.WaveFormat, bitrate))
-                        {
-                            await reader.CopyToAsync(writer);
-                        }
-                        
-                        // Check if the new file is under the size limit
-                        var reducedFileInfo = new FileInfo(outputFilePath);
-                        Debug.WriteLine($"Reduced file size: {reducedFileInfo.Length / (1024 * 1024)} MB");
-                        
-                        if (reducedFileInfo.Length <= maxSizeBytes)
-                        {
-                            Debug.WriteLine($"Successfully reduced file to {reducedFileInfo.Length / (1024 * 1024)} MB with {bitrate} kbps bitrate");
-                            return outputFilePath;
-                        }
-                    }
-                    finally
-                    {
-                        if (File.Exists(tempWavPath))
-                        {
-                            try { File.Delete(tempWavPath); }
-                            catch (IOException ex) { Debug.WriteLine($"Warning: Could not delete temp WAV file: {ex.Message}"); }
-                        }
+                        Debug.WriteLine($"Successfully reduced file to {reducedFileInfo.Length / (1024 * 1024)} MB with {bitrate} kbps bitrate");
+                        return outputFilePath;
                     }
                 }
                 catch (Exception ex)
@@ -923,69 +884,119 @@ namespace os.Services
                     Debug.WriteLine($"Error while reducing file at {bitrate} kbps: {ex.Message}");
                 }
             }
-            
+
             // If we couldn't get under the limit with bitrate reduction alone, try mono conversion
             try
             {
                 Debug.WriteLine("Attempting to convert to mono at lowest bitrate");
-                
-                string tempWavPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName() + ".wav");
-                
-                try
-                {
-                    using (var reader = new Mp3FileReader(sourceFilePath))
+
+                // Convert to mono with lowest bitrate
+                var result = await FFMpegArguments
+                    .FromFileInput(sourceFilePath)
+                    .OutputToFile(outputFilePath, true, options =>
                     {
-                        // Create mono format for the output
-                        var monoFormat = new WaveFormat(reader.WaveFormat.SampleRate, 1);
-                        
-                        // Create resampler to convert to mono
-                        using (var resampler = new MediaFoundationResampler(reader, monoFormat))
-                        using (var waveWriter = new WaveFileWriter(tempWavPath, monoFormat))
-                        {
-                            byte[] buffer = new byte[4096];
-                            int bytesRead;
-                            while ((bytesRead = resampler.Read(buffer, 0, buffer.Length)) > 0)
-                            {
-                                waveWriter.Write(buffer, 0, bytesRead);
-                            }
-                        }
-                        
-                        // Re-encode to MP3 with lowest bitrate
-                        using (var waveReader = new WaveFileReader(tempWavPath))
-                        using (var writer = new LameMP3FileWriter(outputFilePath, waveReader.WaveFormat, 32))
-                        {
-                            await waveReader.CopyToAsync(writer);
-                        }
-                        
-                        // Check if the new file is under the size limit
-                        var reducedFileInfo = new FileInfo(outputFilePath);
-                        
-                        if (reducedFileInfo.Length <= maxSizeBytes)
-                        {
-                            Debug.WriteLine($"Successfully reduced file to {reducedFileInfo.Length / (1024 * 1024)} MB with mono conversion");
-                            return outputFilePath;
-                        }
-                        else
-                        {
-                            Debug.WriteLine($"File still exceeds size limit after all reduction attempts: {reducedFileInfo.Length / (1024 * 1024)} MB");
-                            return outputFilePath; // Return anyway, as this is our best effort
-                        }
-                    }
-                }
-                finally
-                {
-                    if (File.Exists(tempWavPath))
-                    {
-                        try { File.Delete(tempWavPath); }
-                        catch (IOException ex) { Debug.WriteLine($"Warning: Could not delete temp WAV file: {ex.Message}"); }
-                    }
-                }
+                        options.WithAudioCodec(AudioCodec.LibMp3Lame);
+                        options.WithAudioBitrate(32);
+                        options.WithCustomArgument("-ac 1"); // Mono
+                        options.WithCustomArgument("-q:a 9"); // Low quality setting for maximum compression
+                    })
+                    .ProcessAsynchronously();
+
+                // Check if the new file is under the size limit
+                var reducedFileInfo = new FileInfo(outputFilePath);
+
+                Debug.WriteLine(reducedFileInfo.Length <= maxSizeBytes
+                    ? $"Successfully reduced file to {reducedFileInfo.Length / (1024 * 1024)} MB with mono conversion"
+                    : $"File still exceeds size limit after all reduction attempts: {reducedFileInfo.Length / (1024 * 1024)} MB");
+
+                return outputFilePath; // Return anyway, as this is our best effort
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"Error during mono conversion: {ex.Message}");
                 return sourceFilePath; // Return original in case of failure
             }
+        }
+
+        /// <summary>
+        /// Gets basic MP3 properties using FFProbe (replaces NAudio functionality)
+        /// </summary>
+        private async Task<AudioFileProperties> GetMp3Properties(string filePath)
+        {
+            var result = new AudioFileProperties();
+
+            try
+            {
+                var mediaInfo = await FFProbe.AnalyseAsync(filePath);
+
+                // Get duration
+                result.DurationSeconds = mediaInfo.Duration.TotalSeconds;
+
+                // Get audio properties from primary audio stream
+                if (mediaInfo.PrimaryAudioStream != null)
+                {
+                    // Get bitrate
+                    if (mediaInfo.PrimaryAudioStream.BitRate > 0)
+                    {
+                        result.BitrateKbps = (int)(mediaInfo.PrimaryAudioStream.BitRate / 1000);
+                    }
+                    else
+                    {
+                        // Calculate from file size and duration if not explicitly provided
+                        if (result.DurationSeconds > 0)
+                        {
+                            long fileSizeInBits = new FileInfo(filePath).Length * 8;
+                            result.BitrateKbps = (int)(fileSizeInBits / result.DurationSeconds / 1000);
+                        }
+                        else
+                        {
+                            result.BitrateKbps = 128; // Default
+                        }
+                    }
+
+                    // Get sample rate
+                    if (mediaInfo.PrimaryAudioStream.SampleRateHz > 0)
+                    {
+                        result.SampleRate = mediaInfo.PrimaryAudioStream.SampleRateHz;
+                    }
+                    else
+                    {
+                        result.SampleRate = 44100; // Default
+                    }
+
+                    // Get channels
+                    if (mediaInfo.PrimaryAudioStream.Channels > 0)
+                    {
+                        result.Channels = mediaInfo.PrimaryAudioStream.Channels;
+                    }
+                    else
+                    {
+                        result.Channels = 2; // Default to stereo
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error getting MP3 properties: {ex.Message}");
+                // Set default values
+                result.DurationSeconds = 0;
+                result.BitrateKbps = 128;
+                result.SampleRate = 44100;
+                result.Channels = 2;
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Contains basic properties of an audio file
+        /// </summary>
+        private class AudioFileProperties
+        {
+            public double DurationSeconds { get; set; }
+            public int BitrateKbps { get; set; }
+            public int SampleRate { get; set; }
+            public int Channels { get; set; }
         }
     }
 }
