@@ -87,7 +87,8 @@ namespace os.Controllers
             if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
             {
                 ViewBag.StatusMessage = "Email and password are required.";
-                return View();
+                // Create and populate HomeBundle before returning the view
+                return await PrepareHomeView();
             }
 
             // Normalize the email and find the user
@@ -116,8 +117,25 @@ namespace os.Controllers
                 ViewBag.StatusMessage = "User not found.";
             }
 
-            // If we got this far, something failed; redisplay the form
-            return View();
+            // If we got this far, something failed; redisplay the form with populated model
+            return await PrepareHomeView();
+        }
+
+        // Helper method to prepare the HomeBundle model
+        private async Task<IActionResult> PrepareHomeView()
+        {
+            HomeBundle homeBundle = new HomeBundle();
+
+            // Get announcements
+            List<AnnouncementModel> announcementList = _dbConnectionService.GetAnnouncementList();
+            homeBundle.AnnouncementList = announcementList;
+
+            // Get meetings
+            List<MeetingModel> meetingList = _dbConnectionService.GetMeetingList();
+            homeBundle.MeetingList = meetingList.Where(m => m.Status == "Active").OrderBy(m => m.Weekday).ThenBy(m => m.StartTime).ToList();
+
+            // Return the view with the populated model
+            return View(homeBundle);
         }
 
         public IActionResult Privacy()

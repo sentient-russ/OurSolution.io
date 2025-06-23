@@ -47,7 +47,7 @@
                 </table>
             </div>
             <div class="text-center mt-3">
-                <button type="button" id="processNamesButton" class="btn edit-btn">Process Selected Names</button>
+                <button type="button" id="processNamesButton" class="btn edit-btn">Process Selected</button>
             </div>
         }
         else
@@ -83,9 +83,24 @@
             // Show processing UI
             $("#nameSelectionContainer").hide();
             $("#processingStatusContainer").show();
-            
+            startPulsing(); // Start pulsing effect
             // Submit the form
             $("#uploadSpeakerForm").submit();
         });
+
+        let pulseInterval; // Variable to store the interval ID for pulsing
+        function startPulsing() {
+            const statusMessage = document.getElementById('processNamesButton');
+            let opacity = 1; // Start with full opacity
+
+            // Clear any existing interval to avoid multiple pulses
+            clearInterval(pulseInterval);
+
+            // Set up the interval to animate the opacity
+            pulseInterval = setInterval(() => {
+                opacity = opacity === 1 ? 0.2 : 1; // Toggle opacity between 1 and 0.2
+                statusMessage.style.opacity = opacity; // Update the opacity
+            }, 1000); // Toggle every 500ms (0.5 seconds)
+        }
     });
 </script>

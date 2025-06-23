@@ -40,7 +40,7 @@
                 <input asp-for="DateRecorded" class="form-control" />
                 <span asp-validation-for="DateRecorded" class="text-danger"></span>
             </div>
-            <div class="form-group" style="margin-top: 5px;">
+            <div class="form-group" style="margin-top: 5px;" hidden>
                 <label asp-for="UploadDate" class="control-label cust-label"></label>
                 <input asp-for="UploadDate" class="form-control" readonly />
                 <span asp-validation-for="UploadDate" class="text-danger"></span>
@@ -70,7 +70,7 @@
                 <input asp-for="ReplacedNames" type="checkbox" class="form-check-input" id="ReplacedNames" />
                 <label asp-for="ReplacedNames" class="form-check-label control-label cust-label">Replace Names</label>
                 <span asp-validation-for="ReplacedNames" class="text-danger"></span>
-                <small class="form-text text-muted d-block">Note: When enabled, audio processing will take approximately 20 minutes.</small>
+                <small class="form-text text-muted d-block">Note: When enabled, audio processing can take approximately 10-30 minutes.</small>
             </div>
 
             <!-- Progress bar container (hidden by default) -->
@@ -145,10 +145,10 @@
                                 </table>
                             </div>
                         </div>
-                        <div class="card-footer d-flex justify-content-between">
-                            @* <button type="button" id="cancelNameSelection" class="btn btn-secondary">Cancel Processing</button> *@
+                        <div class="card-footer d-flex" ">
+                            <button type="button" id="cancelNameSelection" class="btn btn-secondary">Cancel</button>
                             <input type="hidden" name="existingSpeakerId" value="@nameSelectionModel.SpeakerId" />
-                            <button type="submit" id="processNamesButton" class="btn btn-outline-secondary">Process Selected Names</button>
+                            <button type="submit" id="processNamesButton" class="btn btn-outline-secondary" style="min-width: 150px !important; margin-left:10px;">Process Names</button>
                         </div>
                     </div>
                 </form>
@@ -163,7 +163,8 @@
     }
 
     <script>
-                $(document).ready(function() {
+        $(document).ready(function() {
+            // Get references to elements
             const uploadForm = $("#uploadSpeakerForm");
             const nameSelectionForm = $("#nameSelectionForm");
             const submitButton = $("#submitButton");
@@ -175,21 +176,27 @@
             const statusText = $("#processingStatusText");
             const timeRemainingText = $("#timeRemainingText");
             const formFile = $("#FormFile");
-            const nameSelectionContainer = $("#nameSelectionContainer");
             const nameSelectionWrapper = $("#nameSelectionWrapper");
             const backButton = $(".edit-btn:contains('Back')");
+            const statusMessage = $(".alert.alert-info");
+
+            // Function to update visibility state
+            function updateVisibilityState() {
+                if (nameSelectionWrapper.length && nameSelectionWrapper.is(":visible")) {
+                    // Name selection is visible - ensure processing container is hidden
+                    processingContainer.hide();
+                    submitButton.hide();
+                    backButton.hide();
+                }
+            }
+
+            // Call on page load
+            updateVisibilityState();
 
             // Start time for the processing (will be set when form is submitted)
             let processingStartTime;
-            // Total estimated processing time in seconds (20 minutes = 1200 seconds)
-            const totalProcessingTime = 1200;
-
-            // Hide processing container and submit button when name selection is visible
-            if (nameSelectionWrapper.is(":visible")) {
-                processingContainer.hide();
-                submitButton.hide();
-                backButton.hide();
-            }
+            // Total estimated processing time in seconds (10 minutes = 600 seconds)
+            const totalProcessingTime = 600;
 
             // Handle "Select All" checkbox for names
             $("#selectAllNames").change(function() {
@@ -209,7 +216,7 @@
             });
 
             // Initial upload form submission
-            uploadForm.on("submit", function(e) {
+            uploadForm.submit(function(e) {
                 // Regular upload with "Replace Names" checked but no names selected yet
                 if (replacedNamesCheckbox.is(":checked") && formFile[0].files.length > 0) {
                     // Show the processing container for initial upload/analysis
@@ -222,6 +229,15 @@
                     submitButton.prop("disabled", true);
                     submitButton.val("Processing...");
 
+                    // Change Back button to Cancel button
+                    backButton.text("Cancel");
+                    backButton.off("click").on("click", function(e) {
+                        e.preventDefault();
+                        if (confirm("Are you sure you want to cancel the processing? This will abort the current operation.")) {
+                            window.location.href = "@Url.Action("ViewSpeakers", "Admin")";
+                        }
+                    });
+
                     // Start the progress update
                     updateProgress();
 
@@ -232,43 +248,33 @@
             });
 
             // Name selection form submission
-            nameSelectionForm.on("submit", function(e) {
-                e.preventDefault();
+            if (nameSelectionForm.length > 0) {
+                nameSelectionForm.submit(function(e) {
+                    e.preventDefault();
 
-                // Show processing UI with 90% completion
-                processingContainer.show();
-                progressBar.css("width", "90%");
-                progressBar.attr("aria-valuenow", 90);
-                progressBar.text("90%");
-                statusText.text("Finalizing processed audio...");
+                    // Disable the process button and start pulsing to indicate processing
+                    processNamesButton.prop("disabled", true);
+                    processNamesButton.text("Processing...");
+                    startPulsing();
 
-                // Disable the process button to prevent multiple submissions
-                processNamesButton.prop("disabled", true);
-                $(processNamesButton).text("Processing...");
+                    // Set the start time
+                    processingStartTime = new Date();
 
-                // Set the start time
-                processingStartTime = new Date();
-
-                // Calculate remaining time (10% of total)
-                const remainingSeconds = totalProcessingTime * 0.1;
-                timeRemainingText.text(formatTimeRemaining(remainingSeconds));
-
-                // Set an interval to update the progress regularly
-                const progressInterval = setInterval(updateProgress, 1000);
-                sessionStorage.setItem("progressInterval", progressInterval);
-
-                // Submit the form after a short delay to allow the UI to update
-                setTimeout(() => {
-                    this.submit();
-                }, 100);
-            });
+                    // Submit the form after a short delay to allow the UI to update
+                    setTimeout(() => {
+                        this.submit();
+                    }, 100);
+                });
+            }
 
             // Cancel button click handler
-            cancelNameSelection.on("click", function() {
-                if (confirm("Are you sure you want to cancel the name replacement process? The speaker will be uploaded without replacing names.")) {
-                    window.location.href = "@Url.Action("ViewSpeakers", "Admin")";
-                }
-            });
+            if (cancelNameSelection.length > 0) {
+                cancelNameSelection.click(function() {
+                    if (confirm("Are you sure you want to cancel the name replacement process? The speaker will be uploaded without replacing names.")) {
+                        window.location.href = "@Url.Action("ViewSpeakers", "Admin")";
+                    }
+                });
+            }
 
             function updateProgress() {
                 if (!processingStartTime) return;
@@ -288,32 +294,53 @@
                 const remainingSeconds = totalProcessingTime - elapsedTime;
 
                 // Update status messages based on progress
-                if (nameSelectionWrapper.is(":visible")) {
+                if (nameSelectionWrapper.length && nameSelectionWrapper.is(":visible")) {
                     // We're in the name processing phase
-                    if (progressPercent < 30) {
-                        statusText.text("Processing audio segments...");
-                    } else if (progressPercent < 70) {
-                        statusText.text("Replacing personal names in audio...");
+                    if (progressPercent < 10) {
+                        statusText.text("Uploading audio file...");
+                    } else if (progressPercent < 30) {
+                        statusText.text("Transcribing audio...");
+                    } else if (progressPercent < 60) {
+                        statusText.text("Calculating time segments...");
+                    } else if (progressPercent < 90) {
+                        statusText.text("Structuring names and segments...");
                     } else {
-                        statusText.text("Finalizing processed audio...");
+                        statusText.text("Preparing name selection options...");
                     }
                 } else {
                     // Initial upload phase
                     if (progressPercent < 10) {
                         statusText.text("Uploading audio file...");
                     } else if (progressPercent < 30) {
-                        statusText.text("Analyzing audio for personal names...");
+                        statusText.text("Transcribing audio...");
                     } else if (progressPercent < 60) {
-                        statusText.text("Processing audio segments...");
+                        statusText.text("Calculating time segments...");
                     } else if (progressPercent < 90) {
-                        statusText.text("Preparing name selection options...");
+                        statusText.text("Structuring names and segments...");
                     } else {
-                        statusText.text("Finalizing analysis...");
+                        statusText.text("Preparing name selection options...");
                     }
                 }
 
                 // Format and display time remaining
                 timeRemainingText.text(formatTimeRemaining(remainingSeconds));
+            }
+
+            let pulseInterval; // Variable to store the interval ID for pulsing
+            function startPulsing() {
+                const button = document.getElementById('processNamesButton');
+                if (!button) return;
+
+                let opacity = 1; // Start with full opacity
+
+                // Clear any existing interval to avoid multiple pulses
+                clearInterval(pulseInterval);
+
+                // Set up the interval to animate the opacity
+                pulseInterval = setInterval(() => {
+                    opacity = opacity === 1 ? 0.2 : 1; // Toggle opacity between 1 and 0.2
+                    button.style.opacity = opacity; // Update the opacity
+                }, 1000); // Toggle every second
             }
 
             function formatTimeRemaining(seconds) {

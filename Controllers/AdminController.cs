@@ -100,7 +100,7 @@ namespace os.Controllers
         [HttpPost]
         [Authorize(Roles = "Administrator")]
         [RequestSizeLimit(700 * 1024 * 1024)] // 700MB
-        public async Task<IActionResult> UploadSpeaker([Bind("SpeakerId, FileName, FirstName, LastName, Description, NumUpVotes, DateRecorded, UploadDate, UploadedBy, SpeakerStatus, Visibility, ReplacedNames, FormFile")] SpeakerModel newSpeakerIn, List<NameItem> Names = null, int? existingSpeakerId = null)
+        public async Task<IActionResult> UploadSpeaker([Bind("SpeakerId, FileName, FirstName, LastName, Description, NumUpVotes, DateRecorded, UploadDate, UploadedBy, SpeakerStatus, Visibility, ReplacedNames, FormFile")] SpeakerModel newSpeakerIn, List<CutSpeakerModel> Names = null, int? existingSpeakerId = null)
         {
             var LoggedInAppUser = await _userManager.GetUserAsync(User);
 
@@ -118,13 +118,14 @@ namespace os.Controllers
                     }
 
                     // Convert the selected names to CutSpeakerModel
-                    var selectedNames = Names
+                    List<CutSpeakerModel> selectedNames = Names
                         .Where(n => n.Selected)
                         .Select(n => new CutSpeakerModel
                         {
                             Name = n.Name,
                             Start = n.Start,
-                            End = n.End
+                            End = n.End,
+                            Selected = n.Selected
                         })
                         .ToList();
 

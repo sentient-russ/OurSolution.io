@@ -8,6 +8,8 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
 namespace os.Services
 {
@@ -54,6 +56,7 @@ namespace os.Services
         private readonly TranscriptionStrategy _strategy;
         private readonly string _modelSize;
         private readonly bool _useGpu;
+        private static readonly SemaphoreSlim _gpuLock = new(1, 1); // GPU access lock
 
         /// <summary>
         /// Transcription strategy to use
@@ -62,8 +65,7 @@ namespace os.Services
         {
             OpenAIWhisper,
             FasterWhisper,
-            WhisperCpp,
-            WhisperS2T
+            WhisperCpp
         }
 
         /// <summary>
@@ -76,213 +78,208 @@ namespace os.Services
             _logger = logger;
             _configuration = configuration;
 
-            // Get configuration
             _uploadsFolder = Path.Combine("wwwroot", "uploads");
             _transcriptionsFolder = Path.Combine("wwwroot", "transcriptions");
 
-            // Get strategy from configuration or default to WhisperS2T
-            string strategyStr = _configuration["Transcription:Strategy"] ?? "WhisperS2T";
+            string strategyStr = _configuration["Transcription:Strategy"] ?? "FasterWhisper";
             if (!Enum.TryParse(strategyStr, true, out _strategy))
             {
-                _strategy = TranscriptionStrategy.WhisperS2T;
+                _strategy = TranscriptionStrategy.FasterWhisper;
             }
 
-            // Get model size from configuration or default to "medium"
             _modelSize = _configuration["Transcription:ModelSize"] ?? "small";
-
-            // Determine if GPU should be used (default to true)
             _useGpu = bool.TryParse(_configuration["Transcription:UseGPU"], out bool useGpu) ? useGpu : true;
 
-            // Create transcriptions directory if it doesn't exist
             if (!Directory.Exists(_transcriptionsFolder))
             {
                 Directory.CreateDirectory(_transcriptionsFolder);
             }
 
-            // Set up Python script for transcription
             _pythonScriptPath = CreatePythonScript();
-
             _logger.LogInformation($"TranscriptionService initialized with strategy: {_strategy}, model size: {_modelSize}, GPU: {_useGpu}");
         }
 
-        /// <summary>
-        /// Creates the Python script for transcription
-        /// </summary>
-        /// <returns>Path to the created script</returns>
         private string CreatePythonScript()
         {
-            string scriptPath;
-            string scriptContent;
+            string scriptPath = Path.Combine(Path.GetTempPath(), "faster_whisper_script.py");
 
-            switch (_strategy)
-            {
-                case TranscriptionStrategy.WhisperS2T:
-                    scriptPath = Path.Combine(Path.GetTempPath(), "whisper_s2t_script.py");
-                    scriptContent = @"
+            // Use the improved Python script from the artifact above
+            string scriptContent = @"
 import os
-# Set environment variables to avoid OpenMP conflicts
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
 os.environ['HF_HUB_DISABLE_SYMLINKS_WARNING'] = '1'
 os.environ['PYTHONIOENCODING'] = 'utf-8'
+os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'max_split_size_mb:128,garbage_collection_threshold:0.6,expandable_segments:True'
+os.environ['CUDA_LAUNCH_BLOCKING'] = '1'  # For debugging CUDA issues
+os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+os.environ['OMP_NUM_THREADS'] = '1'
 
-# Suppress common warnings
 import warnings
 warnings.filterwarnings('ignore', message='pkg_resources is deprecated as an API')
 warnings.filterwarnings('ignore', message='.*Cache-system uses symlinks.*')
+warnings.filterwarnings('ignore', category=UserWarning)
 
 import sys
 import json
+import gc
 import torch
-import numpy as np
+import tempfile
+import time
+from pathlib import Path
 
-def transcribe(audio_path, output_path, model_size='medium', use_gpu=True):
-    print(f'Transcribing {audio_path} with Whisper/S2T, model size {model_size}, GPU: {use_gpu}')
+def check_cuda_availability():
+    print('=== CUDA Environment Check ===')
+    print(f'PyTorch version: {torch.__version__}')
+    print(f'CUDA available: {torch.cuda.is_available()}')
     
-    # Check if file exists
-    if not os.path.exists(audio_path):
-        print(f'Error: File {audio_path} does not exist')
-        sys.exit(1)
+    if torch.cuda.is_available():
+        print(f'CUDA version: {torch.version.cuda}')
+        print(f'cuDNN version: {torch.backends.cudnn.version()}')
+        print(f'Number of GPUs: {torch.cuda.device_count()}')
         
-    try:
-        # Dynamically import needed modules
+        for i in range(torch.cuda.device_count()):
+            props = torch.cuda.get_device_properties(i)
+            print(f'GPU {i}: {props.name}')
+            print(f'  Memory: {props.total_memory / 1024**3:.2f} GB')
+            print(f'  Compute capability: {props.major}.{props.minor}')
+        
         try:
-            from whisper_s2t import WhisperS2T
-            from whisper_s2t.utils.vad import VAD
-        except ImportError:
-            print('WhisperS2T not found, attempting to install...')
-            import subprocess
-            # Install from GitHub directly
-            subprocess.check_call([sys.executable, '-m', 'pip', 'install', 
-                                 'git+https://github.com/shashikg/WhisperS2T.git'])
-            from whisper_s2t import WhisperS2T
-            from whisper_s2t.utils.vad import VAD
-            print('WhisperS2T installed successfully')
-        
-        # Set device based on availability and configuration
-        device = 'cuda' if use_gpu and torch.cuda.is_available() else 'cpu'
-        if device == 'cuda':
-            gpu_info = torch.cuda.get_device_name(0)
-            print(f'Using GPU: {gpu_info}')
-        else:
-            print('Using CPU for transcription')
-        
-        # Configure compute type based on device
-        compute_type = 'float16' if device == 'cuda' else 'int8'
-        
-        # Initialize VAD for speech detection
-        vad = VAD(use_gpu=device=='cuda', vad_onset=0.5, vad_offset=0.5)
-        
-        # Initialize WhisperS2T model
-        model = WhisperS2T(
-            model_size=model_size,
-            vad=vad,
-            device=device,
-            compute_type=compute_type,
-            cache_dir=os.path.join(os.path.expanduser('~'), '.cache', 'whisper_s2t')
-        )
-        
-        # Configure transcription options
-        transcribe_options = {
-            'language': 'en',  # Can be configured via parameter if needed
-            'task': 'transcribe',
-            'word_timestamps': True,
-            'condition_on_previous_text': True,
-            'vad_filter': True,
-            'ts_align': True,
-            'temperature': [0.0, 0.2, 0.4, 0.6, 0.8, 1.0],  # Multiple temperatures for better results
-            'initial_prompt': None  # Can provide context if needed
-        }
-        
-        # Transcribe with word timestamps
-        result = model.transcribe(audio_path, **transcribe_options)
-        
-        # Format results to match expected format
-        formatted_result = {
-            'text': result.get('text', ''),
-            'segments': []
-        }
-        
-        for i, segment in enumerate(result.get('segments', [])):
-            segment_data = {
-                'id': i,
-                'start': segment.get('start', 0),
-                'end': segment.get('end', 0),
-                'text': segment.get('text', ''),
-                'words': []
-            }
-            
-            # Process word timestamps if available
-            if 'words' in segment and segment['words']:
-                for word in segment['words']:
-                    segment_data['words'].append({
-                        'start': word.get('start', 0),
-                        'end': word.get('end', 0),
-                        'word': word.get('word', '')
-                    })
-            
-            formatted_result['segments'].append(segment_data)
-        
-        # Write to output file
-        with open(output_path, 'w', encoding='utf-8') as f:
-            json.dump(formatted_result, f, ensure_ascii=False, indent=2)
-        
-        print(f'Transcription saved to {output_path}')
-        
-    except Exception as e:
-        print(f'Error during transcription: {str(e)}')
-        import traceback
-        traceback.print_exc()
-        sys.exit(1)
-
-if __name__ == '__main__':
-    if len(sys.argv) < 3:
-        print('Usage: python script.py input_file output_file [model_size] [use_gpu]')
-        sys.exit(1)
-    
-    input_file = sys.argv[1]
-    output_file = sys.argv[2]
-    model_size = sys.argv[3] if len(sys.argv) > 3 else 'medium'
-    use_gpu = sys.argv[4].lower() == 'true' if len(sys.argv) > 4 else True
-    
-    transcribe(input_file, output_file, model_size, use_gpu)
-";
-                    break;
-
-                case TranscriptionStrategy.FasterWhisper:
-                    scriptPath = Path.Combine(Path.GetTempPath(), "faster_whisper_script.py");
-                    scriptContent = @"
-import os
-# Set environment variables to avoid OpenMP conflicts
-os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
-os.environ['HF_HUB_DISABLE_SYMLINKS_WARNING'] = '1'
-os.environ['PYTHONIOENCODING'] = 'utf-8'
-
-# Suppress common warnings
-import warnings
-warnings.filterwarnings('ignore', message='pkg_resources is deprecated as an API')
-warnings.filterwarnings('ignore', message='.*Cache-system uses symlinks.*')
-
-import sys
-import json
-import os
-from faster_whisper import WhisperModel
+            torch.cuda.empty_cache()
+            free_mem, total_mem = torch.cuda.mem_get_info(0)
+            print(f'Current GPU memory: {free_mem / 1024**3:.2f}GB free / {total_mem / 1024**3:.2f}GB total')
+        except Exception as e:
+            print(f'Error checking GPU memory: {e}')
+    else:
+        print('CUDA is not available')
+    print('=== End CUDA Check ===\n')
 
 def transcribe(audio_path, output_path, model_size='small', use_gpu=False):
-    print(f'Transcribing {audio_path} with model size {model_size}')
+    print(f'Transcribing {audio_path} with model size {model_size}, GPU: {use_gpu}')
     
-    # Check if file exists
     if not os.path.exists(audio_path):
         print(f'Error: File {audio_path} does not exist')
         sys.exit(1)
-        
+    
+    check_cuda_availability()
+    
     try:
-        # Load the model - use CPU with int8 quantization for best compatibility
-        model = WhisperModel(model_size, device='cpu', compute_type='int8')
+        from faster_whisper import WhisperModel
+        from pydub import AudioSegment
+        import librosa
         
-        # Transcribe with word timestamps
-        segments, info = model.transcribe(audio_path, word_timestamps=True)
+        if use_gpu and torch.cuda.is_available():
+            torch.cuda.empty_cache()
+            gc.collect()
         
-        # Format results
+        device = 'cuda' if use_gpu and torch.cuda.is_available() else 'cpu'
+        
+        if device == 'cuda':
+            compute_type = 'float16'
+            try:
+                free_mem, total_mem = torch.cuda.mem_get_info(0)
+                free_mem_gb = free_mem / (1024**3)
+                
+                if free_mem_gb < 3.0:
+                    print(f'WARNING: Low GPU memory ({free_mem_gb:.2f}GB free). Using more conservative settings.')
+                    compute_type = 'int8'
+                    
+            except Exception as e:
+                print(f'Error checking GPU memory, falling back to CPU: {e}')
+                device = 'cpu'
+                compute_type = 'int8'
+        else:
+            compute_type = 'int8'
+        
+        print(f'Using device: {device}, compute_type: {compute_type}')
+        
+        try:
+            duration = librosa.get_duration(path=audio_path)
+            print(f'Audio duration: {duration:.2f} seconds')
+        except Exception as e:
+            print(f'Warning: Could not determine audio duration: {e}')
+            duration = 0
+        
+        try:
+            print('Initializing Whisper model...')
+            model_kwargs = {
+                'model_size_or_path': model_size,
+                'device': device,
+                'compute_type': compute_type,
+                'download_root': 'models',
+                'cpu_threads': 2,
+            }
+            
+            if device == 'cuda':
+                model_kwargs.update({
+                    'num_workers': 1,
+                })
+            
+            model = WhisperModel(**model_kwargs)
+            print('Model initialized successfully')
+            
+        except Exception as e:
+            print(f'Error initializing model: {e}')
+            if use_gpu:
+                print('Falling back to CPU...')
+                device = 'cpu'
+                compute_type = 'int8'
+                model = WhisperModel(
+                    model_size_or_path=model_size,
+                    device=device,
+                    compute_type=compute_type,
+                    download_root='models',
+                    cpu_threads=2
+                )
+            else:
+                raise
+        
+        print('Starting transcription...')
+        
+        transcribe_kwargs = {
+            'audio': audio_path,
+            'word_timestamps': True,
+            'beam_size': 1,
+            'vad_filter': True,
+            'vad_parameters': {
+                'min_silence_duration_ms': 500,
+                'max_speech_duration_s': 30,
+            },
+            'language': None,
+            'condition_on_previous_text': False,
+        }
+        
+        if duration > 120 and device == 'cuda':
+            print('Using chunked processing for long audio...')
+            transcribe_kwargs['chunk_length'] = 30
+        
+        try:
+            segments, info = model.transcribe(**transcribe_kwargs)
+            segments = list(segments)
+            
+        except Exception as e:
+            print(f'Error during transcription: {e}')
+            if device == 'cuda':
+                print('Transcription failed on GPU, trying CPU...')
+                del model
+                torch.cuda.empty_cache()
+                gc.collect()
+                
+                model = WhisperModel(
+                    model_size_or_path=model_size,
+                    device='cpu',
+                    compute_type='int8',
+                    download_root='models',
+                    cpu_threads=2
+                )
+                
+                transcribe_kwargs['audio'] = audio_path
+                segments, info = model.transcribe(**transcribe_kwargs)
+                segments = list(segments)
+            else:
+                raise
+        
+        print(f'Transcription completed. Language: {info.language}, probability: {info.language_probability:.2f}')
+        
         result = {
             'text': '',
             'segments': []
@@ -297,7 +294,7 @@ def transcribe(audio_path, output_path, model_size='small', use_gpu=False):
                 'words': []
             }
             
-            if hasattr(segment, 'words'):
+            if hasattr(segment, 'words') and segment.words:
                 for word in segment.words:
                     segment_data['words'].append({
                         'start': word.start,
@@ -308,14 +305,18 @@ def transcribe(audio_path, output_path, model_size='small', use_gpu=False):
             result['text'] += segment.text + ' '
             result['segments'].append(segment_data)
         
-        # Write to output file
         with open(output_path, 'w', encoding='utf-8') as f:
             json.dump(result, f, ensure_ascii=False, indent=2)
         
         print(f'Transcription saved to {output_path}')
         
+        del model
+        gc.collect()
+        if device == 'cuda':
+            torch.cuda.empty_cache()
+        
     except Exception as e:
-        print(f'Error during transcription: {str(e)}')
+        print(f'Fatal error during transcription: {str(e)}')
         import traceback
         traceback.print_exc()
         sys.exit(1)
@@ -332,212 +333,11 @@ if __name__ == '__main__':
     
     transcribe(input_file, output_file, model_size, use_gpu)
 ";
-                    break;
 
-                case TranscriptionStrategy.WhisperCpp:
-                    scriptPath = Path.Combine(Path.GetTempPath(), "whisper_cpp_script.py");
-                    scriptContent = @"
-import os
-# Set environment variables to avoid OpenMP conflicts
-os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
-os.environ['HF_HUB_DISABLE_SYMLINKS_WARNING'] = '1'
-os.environ['PYTHONIOENCODING'] = 'utf-8'
-
-# Suppress common warnings
-import warnings
-warnings.filterwarnings('ignore', message='pkg_resources is deprecated as an API')
-warnings.filterwarnings('ignore', message='.*Cache-system uses symlinks.*')
-
-import sys
-import json
-import os
-import subprocess
-
-def transcribe(audio_path, output_path, model_size='small', use_gpu=False):
-    print(f'Transcribing {audio_path} with model size {model_size}, GPU: {use_gpu}')
-    
-    # Check if file exists
-    if not os.path.exists(audio_path):
-        print(f'Error: File {audio_path} does not exist')
-        sys.exit(1)
-    
-    # Map model size to Whisper.cpp model file
-    model_map = {
-        'tiny': 'models/ggml-tiny.bin',
-        'base': 'models/ggml-base.bin',
-        'small': 'models/ggml-small.bin',
-        'medium': 'models/ggml-medium.bin',
-        'large': 'models/ggml-large.bin'
-    }
-    
-    model_path = model_map.get(model_size, 'models/ggml-small.bin')
-    
-    try:
-        # Get the directory where the script is located
-        whisper_cpp_dir = os.getenv('WHISPER_CPP_DIR', '.')
-        whisper_exe = os.path.join(whisper_cpp_dir, 'main')
-        
-        if not os.path.exists(whisper_exe):
-            print(f'Error: Whisper.cpp executable not found at {whisper_exe}')
-            print('Set the WHISPER_CPP_DIR environment variable to point to your Whisper.cpp directory')
-            sys.exit(1)
-        
-        # Run Whisper.cpp with JSON output
-        temp_json = output_path + '.temp.json'
-        cmd = [
-            whisper_exe,
-            '-m', model_path,
-            '-f', audio_path,
-            '-otxt', 
-            '-oj',
-            '-of', temp_json
-        ]
-        
-        # Add GPU parameter if enabled
-        if use_gpu:
-            cmd.append('-gpu')
-        
-        process = subprocess.run(cmd, capture_output=True, text=True)
-        
-        if process.returncode != 0:
-            print(f'Error running Whisper.cpp: {process.stderr}')
-            sys.exit(1)
-        
-        # Read the output and format to match our expected JSON structure
-        if os.path.exists(temp_json):
-            with open(temp_json, 'r', encoding='utf-8') as f:
-                cpp_result = json.load(f)
-            
-            # Convert to our format
-            result = {
-                'text': '',
-                'segments': []
-            }
-            
-            for segment in cpp_result.get('transcription', []):
-                segment_data = {
-                    'id': segment.get('id', 0),
-                    'start': segment.get('from', 0),
-                    'end': segment.get('to', 0),
-                    'text': segment.get('text', ''),
-                    'words': []
-                }
-                
-                # Add words if available
-                for token in segment.get('tokens', []):
-                    if 'from' in token and 'to' in token and 'text' in token:
-                        segment_data['words'].append({
-                            'start': token['from'],
-                            'end': token['to'],
-                            'word': token['text']
-                        })
-                
-                result['text'] += segment_data['text'] + ' '
-                result['segments'].append(segment_data)
-            
-            # Write our formatted result
-            with open(output_path, 'w', encoding='utf-8') as f:
-                json.dump(result, f, ensure_ascii=False, indent=2)
-                
-            # Clean up temp file
-            os.remove(temp_json)
-            
-            print(f'Transcription saved to {output_path}')
-        else:
-            print(f'Error: Whisper.cpp did not produce output file {temp_json}')
-            sys.exit(1)
-        
-    except Exception as e:
-        print(f'Error during transcription: {str(e)}')
-        import traceback
-        traceback.print_exc()
-        sys.exit(1)
-
-if __name__ == '__main__':
-    if len(sys.argv) < 3:
-        print('Usage: python script.py input_file output_file [model_size] [use_gpu]')
-        sys.exit(1)
-    
-    input_file = sys.argv[1]
-    output_file = sys.argv[2]
-    model_size = sys.argv[3] if len(sys.argv) > 3 else 'small'
-    use_gpu = sys.argv[4].lower() == 'true' if len(sys.argv) > 4 else False
-    
-    transcribe(input_file, output_file, model_size, use_gpu)
-";
-                    break;
-
-                case TranscriptionStrategy.OpenAIWhisper:
-                    scriptPath = Path.Combine(Path.GetTempPath(), "openai_whisper_script.py");
-                    scriptContent = @"
-import os
-# Set environment variables to avoid OpenMP conflicts
-os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
-os.environ['HF_HUB_DISABLE_SYMLINKS_WARNING'] = '1'
-os.environ['PYTHONIOENCODING'] = 'utf-8'
-
-# Suppress common warnings
-import warnings
-warnings.filterwarnings('ignore', message='pkg_resources is deprecated as an API')
-warnings.filterwarnings('ignore', message='.*Cache-system uses symlinks.*')
-
-import sys
-import json
-import whisper
-
-def transcribe(audio_path, output_path, model_size='small', use_gpu=False):
-    print(f'Transcribing {audio_path} with model size {model_size}')
-    
-    # Check if file exists
-    if not os.path.exists(audio_path):
-        print(f'Error: File {audio_path} does not exist')
-        sys.exit(1)
-        
-    try:
-        # Load the model
-        model = whisper.load_model(model_size)
-        
-        # Transcribe
-        result = model.transcribe(audio_path, word_timestamps=True)
-        
-        # Write to output file
-        with open(output_path, 'w', encoding='utf-8') as f:
-            json.dump(result, f, ensure_ascii=False, indent=2)
-        
-        print(f'Transcription saved to {output_path}')
-        
-    except Exception as e:
-        print(f'Error during transcription: {str(e)}')
-        import traceback
-        traceback.print_exc()
-        sys.exit(1)
-
-if __name__ == '__main__':
-    if len(sys.argv) < 3:
-        print('Usage: python script.py input_file output_file [model_size] [use_gpu]')
-        sys.exit(1)
-    
-    input_file = sys.argv[1]
-    output_file = sys.argv[2]
-    model_size = sys.argv[3] if len(sys.argv) > 3 else 'small'
-    use_gpu = sys.argv[4].lower() == 'true' if len(sys.argv) > 4 else False
-    
-    transcribe(input_file, output_file, model_size, use_gpu)
-";
-                    break;
-
-                default:
-                    throw new NotSupportedException($"Transcription strategy {_strategy} is not supported");
-            }
-
-            // Create the script file
             File.WriteAllText(scriptPath, scriptContent);
             return scriptPath;
         }
 
-        /// <summary>
-        /// Transcribes an MP3 file from a SpeakerModel
-        /// </summary>
         public async Task<string> TranscribeSpeakerMp3(SpeakerModel speaker, bool force = false, CancellationToken cancellationToken = default)
         {
             if (speaker == null)
@@ -550,54 +350,36 @@ if __name__ == '__main__':
             if (!File.Exists(mp3Path))
                 throw new FileNotFoundException($"Audio file not found: {mp3Path}");
 
-            // Generate a transcription filename
             string transcriptionFilename = Path.GetFileNameWithoutExtension(speaker.SecretFileName) + "_transcript.txt";
             string transcriptionPath = Path.Combine(_transcriptionsFolder, transcriptionFilename);
 
-            // Check if we already have a transcription and aren't forcing a retranscription
             if (!force && File.Exists(transcriptionPath))
             {
                 _logger.LogInformation($"Using existing transcription for {speaker.SecretFileName}");
                 return await File.ReadAllTextAsync(transcriptionPath, cancellationToken);
             }
 
-            // Perform transcription
-            _logger.LogInformation($"Starting transcription of {speaker.SecretFileName}");
-            string transcription = await TranscribeMp3File(mp3Path, cancellationToken);
-
-            // Save transcription for future use
-            await File.WriteAllTextAsync(transcriptionPath, transcription, cancellationToken);
-            _logger.LogInformation($"Transcription saved to {transcriptionPath}");
-
-            return transcription;
-        }
-
-        /// <summary>
-        /// Gets the transcription for a speaker if it exists
-        /// </summary>
-        public async Task<string> GetExistingTranscription(SpeakerModel speaker)
-        {
-            if (speaker == null)
-                throw new ArgumentNullException(nameof(speaker));
-
-            if (string.IsNullOrEmpty(speaker.SecretFileName))
-                return null;
-
-            string transcriptionFilename = Path.GetFileNameWithoutExtension(speaker.SecretFileName) + "_transcript.txt";
-            string transcriptionPath = Path.Combine(_transcriptionsFolder, transcriptionFilename);
-
-            if (File.Exists(transcriptionPath))
+            try
             {
-                return await File.ReadAllTextAsync(transcriptionPath);
-            }
+                _logger.LogInformation($"Starting transcription of {speaker.SecretFileName} with GPU: {_useGpu}");
+                string transcription = await TranscribeMp3File(mp3Path, cancellationToken);
 
-            return null;
+                await File.WriteAllTextAsync(transcriptionPath, transcription, cancellationToken);
+                _logger.LogInformation($"Transcription saved to {transcriptionPath}");
+                return transcription;
+            }
+            catch (Exception ex) when (ex.Message.Contains("-1073740791") && _useGpu)
+            {
+                _logger.LogWarning($"GPU transcription failed with memory error. Falling back to CPU. Error: {ex.Message}");
+                string transcription = await TranscribeMp3FileWithMode(mp3Path, false, cancellationToken);
+
+                await File.WriteAllTextAsync(transcriptionPath, transcription, cancellationToken);
+                _logger.LogInformation($"CPU transcription saved to {transcriptionPath}");
+                return transcription;
+            }
         }
 
-        /// <summary>
-        /// Transcribes an MP3 file from a file path
-        /// </summary>
-        public async Task<string> TranscribeMp3File(string filePath, CancellationToken cancellationToken = default)
+        private async Task<string> TranscribeMp3FileWithMode(string filePath, bool useGpu, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrEmpty(filePath))
                 throw new ArgumentNullException(nameof(filePath));
@@ -605,36 +387,63 @@ if __name__ == '__main__':
             if (!File.Exists(filePath))
                 throw new FileNotFoundException($"File not found: {filePath}");
 
-            // Create a temporary file for the JSON output
             string tempOutputFile = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName() + ".json");
 
             try
             {
-                _logger.LogInformation($"Transcribing {filePath} using {_strategy} strategy with {_modelSize} model, GPU: {_useGpu}");
-
-                // Configure process for the appropriate transcription strategy
-                ProcessStartInfo startInfo;
-
-                // All strategies use Python scripts with the same arguments pattern
-                startInfo = new ProcessStartInfo
+                if (useGpu)
                 {
-                    FileName = "python", // or "python3" depending on your system
-                    Arguments = $"\"{_pythonScriptPath}\" \"{filePath}\" \"{tempOutputFile}\" \"{_modelSize}\" \"{_useGpu}\"",
+                    await _gpuLock.WaitAsync(cancellationToken);
+                }
+
+                _logger.LogInformation($"Transcribing {filePath} using {_strategy} strategy with {_modelSize} model, GPU: {useGpu}");
+
+                ProcessStartInfo startInfo = new()
+                {
+                    FileName = "python",
+                    Arguments = $"\"{_pythonScriptPath}\" \"{filePath}\" \"{tempOutputFile}\" \"{_modelSize}\" \"{useGpu}\"",
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     UseShellExecute = false,
-                    CreateNoWindow = true
+                    CreateNoWindow = true,
+                    WorkingDirectory = Environment.CurrentDirectory
                 };
 
-                // Add environment variables to suppress warnings
-                startInfo.EnvironmentVariables["HF_HUB_DISABLE_SYMLINKS_WARNING"] = "1";
-                startInfo.EnvironmentVariables["PYTHONIOENCODING"] = "utf-8";
+                // Enhanced environment variables for stability
+                var envVars = new Dictionary<string, string>
+                {
+                    ["CUDA_VISIBLE_DEVICES"] = "0",
+                    ["OMP_NUM_THREADS"] = "1",
+                    ["PYTORCH_CUDA_ALLOC_CONF"] = "garbage_collection_threshold:0.6,max_split_size_mb:128,expandable_segments:True",
+                    ["HF_HUB_DISABLE_SYMLINKS_WARNING"] = "1",
+                    ["PYTHONIOENCODING"] = "utf-8",
+                    ["KMP_DUPLICATE_LIB_OK"] = "TRUE",
+                    ["CUDA_LAUNCH_BLOCKING"] = "1", // For debugging
+                    ["PYTHONUNBUFFERED"] = "1", // Ensure real-time output
+                };
+
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    envVars["PYTHONSTACKSIZE"] = "8388608";
+                    envVars["CUDA_CACHE_DISABLE"] = "1"; // Disable CUDA cache on Windows
+                }
+
+                foreach (var kvp in envVars)
+                {
+                    startInfo.EnvironmentVariables[kvp.Key] = kvp.Value;
+                }
+
+                string pythonPath = _configuration["Transcription:PythonPath"];
+                if (!string.IsNullOrEmpty(pythonPath))
+                {
+                    startInfo.FileName = pythonPath;
+                    _logger.LogInformation($"Using custom Python path: {pythonPath}");
+                }
 
                 using var process = new Process { StartInfo = startInfo };
                 var outputBuilder = new StringBuilder();
                 var errorBuilder = new StringBuilder();
 
-                // Set up output handlers
                 process.OutputDataReceived += (sender, e) =>
                 {
                     if (e.Data != null)
@@ -643,41 +452,48 @@ if __name__ == '__main__':
                         _logger.LogDebug($"Transcription process output: {e.Data}");
                     }
                 };
+
                 process.ErrorDataReceived += (sender, e) =>
                 {
                     if (e.Data != null)
                     {
                         errorBuilder.AppendLine(e.Data);
-                        _logger.LogWarning($"Transcription process error: {e.Data}");
+                        // Log CUDA-related errors as warnings, others as debug
+                        if (e.Data.Contains("CUDA", StringComparison.OrdinalIgnoreCase) ||
+                            e.Data.Contains("GPU", StringComparison.OrdinalIgnoreCase))
+                        {
+                            _logger.LogWarning($"GPU-related message: {e.Data}");
+                        }
+                        else
+                        {
+                            _logger.LogDebug($"Transcription process stderr: {e.Data}");
+                        }
                     }
                 };
 
-                // Start the process and begin reading output
+                _logger.LogInformation("Starting transcription process...");
                 process.Start();
                 process.BeginOutputReadLine();
                 process.BeginErrorReadLine();
 
-                // Create a task to wait for the process to exit
                 var processTask = process.WaitForExitAsync(cancellationToken);
-
-                // Add a timeout - default to 30 minutes, configurable
                 int timeoutMinutes = int.TryParse(_configuration["Transcription:TimeoutMinutes"], out int configTimeout)
                     ? configTimeout
                     : 30;
 
                 var timeoutTask = Task.Delay(TimeSpan.FromMinutes(timeoutMinutes), cancellationToken);
+                var completedTask = await Task.WhenAny(processTask, timeoutTask);
 
-                // Wait for either the process to complete or the timeout
-                await Task.WhenAny(processTask, timeoutTask);
-
-                // If the timeout task completed first, cancel the process
-                if (!processTask.IsCompleted)
+                if (completedTask == timeoutTask)
                 {
+                    _logger.LogError($"Transcription process timed out after {timeoutMinutes} minutes");
                     try
                     {
-                        // Try to kill the process
                         if (!process.HasExited)
+                        {
                             process.Kill(true);
+                            await Task.Delay(1000, CancellationToken.None); // Give it time to cleanup
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -687,25 +503,50 @@ if __name__ == '__main__':
                     throw new TimeoutException($"Transcription process timed out after {timeoutMinutes} minutes");
                 }
 
-                // Check for errors
+                // Wait a bit more for output to be captured
+                await Task.Delay(500, CancellationToken.None);
+
+                string outputText = outputBuilder.ToString();
+                string errorText = errorBuilder.ToString();
+
+                _logger.LogInformation($"Transcription process completed with exit code: {process.ExitCode}");
+
+                if (!string.IsNullOrEmpty(outputText))
+                {
+                    _logger.LogDebug($"Process output: {outputText}");
+                }
+
                 if (process.ExitCode != 0)
                 {
-                    string errorMessage = errorBuilder.ToString();
-                    _logger.LogError($"Transcription process failed with exit code {process.ExitCode}: {errorMessage}");
-                    throw new Exception($"Transcription failed with exit code {process.ExitCode}: {errorMessage}");
+                    _logger.LogError($"Transcription process failed with exit code {process.ExitCode}");
+                    _logger.LogError($"Error output: {errorText}");
+
+                    // Check for specific error patterns
+                    if (process.ExitCode == -1073740791 || errorText.Contains("0xC0000409"))
+                    {
+                        throw new Exception($"GPU/CUDA stack overflow error (exit code {process.ExitCode}). This usually indicates CUDA driver issues, insufficient GPU memory management, or hardware compatibility problems. Error: {errorText}");
+                    }
+
+                    throw new Exception($"Transcription failed with exit code {process.ExitCode}: {errorText}");
                 }
 
-                // Check if the output file exists
                 if (!File.Exists(tempOutputFile))
                 {
-                    throw new FileNotFoundException("Transcription failed: Output file not found");
+                    _logger.LogError($"Output file not found: {tempOutputFile}");
+                    _logger.LogError($"Process output: {outputText}");
+                    _logger.LogError($"Process errors: {errorText}");
+                    throw new FileNotFoundException($"Transcription failed: Output file not found. Process may have crashed.");
                 }
 
-                // Parse the JSON output
                 string jsonContent = await File.ReadAllTextAsync(tempOutputFile, cancellationToken);
+
+                if (string.IsNullOrWhiteSpace(jsonContent))
+                {
+                    throw new FormatException("Transcription output file is empty");
+                }
+
                 var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
 
-                // Deserialize based on transcription strategy
                 WhisperResult result;
                 try
                 {
@@ -713,27 +554,28 @@ if __name__ == '__main__':
                 }
                 catch (JsonException ex)
                 {
-                    _logger.LogError(ex, $"Error deserializing transcription JSON: {jsonContent.Substring(0, Math.Min(200, jsonContent.Length))}...");
+                    _logger.LogError(ex, $"Error deserializing transcription JSON. Content: {jsonContent.Substring(0, Math.Min(500, jsonContent.Length))}...");
                     throw new FormatException("Failed to parse transcription output", ex);
                 }
 
-                // Format the output with timestamps
-                var formattedOutput = new StringBuilder();
+                if (result == null)
+                {
+                    throw new FormatException("Deserialized transcription result is null");
+                }
 
-                // Add header with file information
+                // Build formatted output
+                var formattedOutput = new StringBuilder();
                 formattedOutput.AppendLine($"# Transcription of {Path.GetFileName(filePath)}");
                 formattedOutput.AppendLine($"# Created: {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC");
                 formattedOutput.AppendLine($"# Model: {_modelSize}");
                 formattedOutput.AppendLine($"# Strategy: {_strategy}");
-                formattedOutput.AppendLine($"# GPU: {_useGpu}");
+                formattedOutput.AppendLine($"# GPU: {useGpu}");
                 formattedOutput.AppendLine();
 
-                // Add full text
                 formattedOutput.AppendLine("## Full Text");
-                formattedOutput.AppendLine(result.Text);
+                formattedOutput.AppendLine(result.Text ?? string.Empty);
                 formattedOutput.AppendLine();
 
-                // Add segments with timestamps
                 formattedOutput.AppendLine("## Segments");
 
                 if (result.Segments != null)
@@ -742,16 +584,15 @@ if __name__ == '__main__':
                     {
                         string startTime = FormatTimespan(segment.Start);
                         string endTime = FormatTimespan(segment.End);
-                        formattedOutput.AppendLine($"[{startTime} → {endTime}] {segment.Text}");
+                        formattedOutput.AppendLine($"[{startTime} → {endTime}] {segment.Text ?? string.Empty}");
 
-                        // Add word-level timestamps if available
                         if (segment.Words != null && segment.Words.Count > 0)
                         {
                             formattedOutput.AppendLine("  Word timestamps:");
                             foreach (var word in segment.Words)
                             {
                                 string wordStartTime = FormatTimespan(word.Start);
-                                formattedOutput.AppendLine($"    [{wordStartTime}] {word.Word}");
+                                formattedOutput.AppendLine($"    [{wordStartTime}] {word.Word ?? string.Empty}");
                             }
                             formattedOutput.AppendLine();
                         }
@@ -772,7 +613,11 @@ if __name__ == '__main__':
             }
             finally
             {
-                // Clean up temporary files
+                if (useGpu)
+                {
+                    _gpuLock.Release();
+                }
+
                 if (File.Exists(tempOutputFile))
                 {
                     try
@@ -787,22 +632,40 @@ if __name__ == '__main__':
             }
         }
 
-        /// <summary>
-        /// Formats a timespan in seconds to a readable string
-        /// </summary>
+        public async Task<string> GetExistingTranscription(SpeakerModel speaker)
+        {
+            if (speaker == null)
+                throw new ArgumentNullException(nameof(speaker));
+
+            if (string.IsNullOrEmpty(speaker.SecretFileName))
+                return null;
+
+            string transcriptionFilename = Path.GetFileNameWithoutExtension(speaker.SecretFileName) + "_transcript.txt";
+            string transcriptionPath = Path.Combine(_transcriptionsFolder, transcriptionFilename);
+
+            if (File.Exists(transcriptionPath))
+            {
+                return await File.ReadAllTextAsync(transcriptionPath);
+            }
+
+            return null;
+        }
+
+        public async Task<string> TranscribeMp3File(string filePath, CancellationToken cancellationToken = default)
+        {
+            return await TranscribeMp3FileWithMode(filePath, _useGpu, cancellationToken);
+        }
+
         private string FormatTimespan(double seconds)
         {
             TimeSpan time = TimeSpan.FromSeconds(seconds);
             return time.ToString(@"hh\:mm\:ss\.fff");
         }
 
-        /// <summary>
-        /// Whisper JSON result classes
-        /// </summary>
         private class WhisperResult
         {
-            public string Text { get; set; }
-            public List<WhisperSegment> Segments { get; set; }
+            public string Text { get; set; } = string.Empty;
+            public List<WhisperSegment> Segments { get; set; } = new List<WhisperSegment>();
         }
 
         private class WhisperSegment
@@ -810,7 +673,7 @@ if __name__ == '__main__':
             public int Id { get; set; }
             public double Start { get; set; }
             public double End { get; set; }
-            public string Text { get; set; }
+            public string Text { get; set; } = string.Empty;
             public List<WhisperWord> Words { get; set; } = new List<WhisperWord>();
         }
 
@@ -818,7 +681,7 @@ if __name__ == '__main__':
         {
             public double Start { get; set; }
             public double End { get; set; }
-            public string Word { get; set; }
+            public string Word { get; set; } = string.Empty;
         }
     }
 }

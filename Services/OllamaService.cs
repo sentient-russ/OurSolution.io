@@ -12,6 +12,7 @@ public class CutSpeakerModel
     public string? Name { get; set; }
     public string? Start { get; set; }
     public string? End { get; set; }
+    public bool Selected { get; set; }
 }
 
 public class OllamaToolRequest
@@ -110,16 +111,16 @@ public class SpeakerExtractor
                 {
                     Role = "system",
                     Content = "You are an expert at analyzing transcript segments to identify actual human names. " +
-                              "Only extract real person names - do not include pronouns (I, you, we), contractions (I've, they're), or generic terms. " +
-                              "Only return entries when you're certain they are proper human names for example, (first names like: Frank, Bob, Samuel. last names like: Smith, Johnsen, Andrews. other names like Boston, Big, Smiles) " +
+                              "Only extract real person names - do not include ANY pronouns, or generic terms. " +
+                              "Only return entries when you're 100% certain they are persons name.) " +
                               "If no actual person names are found, return an empty array. " +
-                              "Return all identified names in an array called 'names' as strictly structured JSON."
+                              "Return all instances of identified names in an array called 'names' as strictly structured JSON."
                 },
                 new OllamaMessage
                 {
                     Role = "user",
-                    Content = $"Analyze this transcript and extract only proper human names of speakers:\n\n{transcriptContext}\n\n" +
-                              "Focus only on names of actual people, like 'Boston Frank', 'Bill Wilson', 'Nancy Smith' etc. " +
+                    Content = $"Analyze this transcript and extract only proper human names:\n\n{transcriptContext}\n\n" +
+                              "Focus only on names of actual people, like 'Boston Frank', 'Bill Wilson', 'Nancy Smith', 'Mark', 'Sarah', etc. but not " +
                               "Do not include pronouns (I, you, we) or contractions (I've, they're) as names. " +
                               "For each actual person name, identify the beginning timestamp that came before the name and the timestamp that came after the name."
                 }
@@ -270,7 +271,7 @@ public class SpeakerExtractor
                             name = new
                             {
                                 type = "string",
-                                description = "Name of the speaker"
+                                description = "Name of a person"
                             },
                             start = new
                             {

@@ -489,4 +489,9 @@ $RECYCLE.BIN/
 # file uploads folder container speakers
 wwwroot/uploads/*
 wwwroot/transcriptions/*
-
+Models/models--Systran--faster-whisper-large/*
+Models/models--Systran--faster-whisper-medium/*
+Models/models--Systran--faster-whisper-small/*
+Models/models--Systran--faster-whisper-tiny/*
+Models/models--Systran--faster-whisper-small/*
+Models/models--*/
