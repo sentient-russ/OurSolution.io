@@ -92,7 +92,7 @@ public class SpeakerExtractor
     private readonly HttpClient _httpClient;
     private readonly string _ollamaBaseUrl;
 
-    public SpeakerExtractor(HttpClient httpClient, string ollamaBaseUrl = "http://localhost:11434")
+    public SpeakerExtractor(HttpClient httpClient, string ollamaBaseUrl = "http://127.0.0.1:11434")
     {
         _httpClient = httpClient;
         _ollamaBaseUrl = ollamaBaseUrl;
@@ -147,8 +147,16 @@ public class SpeakerExtractor
         });
 
         var content = new StringContent(json, Encoding.UTF8, "application/json");
+        
+        string requestUrl = $"{_ollamaBaseUrl}/api/chat";
+        Debug.WriteLine($"Making request to Ollama at: {requestUrl}");
+        Debug.WriteLine($"Request payload: {json}");
 
-        var response = await _httpClient.PostAsync($"{_ollamaBaseUrl}/api/chat", content);
+        var response = await _httpClient.PostAsync(requestUrl, content);
+        
+        Debug.WriteLine($"Ollama responded with status code: {response.StatusCode}");
+       
+
         response.EnsureSuccessStatusCode();
 
         var responseJson = await response.Content.ReadAsStringAsync();
@@ -293,4 +301,5 @@ public class SpeakerExtractor
         var schemaJson = JsonSerializer.Serialize(schema);
         return JsonSerializer.Deserialize<JsonElement>(schemaJson);
     }
+
 }

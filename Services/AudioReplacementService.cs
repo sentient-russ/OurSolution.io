@@ -105,10 +105,16 @@ namespace os.Services
             string fileName = string.Empty;
             if (transcription.StartsWith("# Transcription of "))
             {
-                // Find the text between "# Transcription of " and the next newline or .mp3
+                // Find the text between "# Transcription of " and the next newline
                 int startIndex = "# Transcription of ".Length;
+                
+                // Try Windows-style line ending first
                 int endIndex = transcription.IndexOf("\r\n", startIndex);
-
+                
+                // If not found, try Unix-style line ending
+                if (endIndex < 0)
+                    endIndex = transcription.IndexOf('\n', startIndex);
+                    
                 if (endIndex > startIndex)
                 {
                     // Extract the full filename (including .mp3 extension)
@@ -118,8 +124,18 @@ namespace os.Services
                     fileName = fullFileName;
                     fileName = Path.GetFileNameWithoutExtension(fullFileName);
                     fileName += "_transcript.txt";
+                    
+                    Debug.WriteLine($"Extracted filename from the transcript: {fileName}");
                 }
             }
+
+            // Check if the filename was properly extracted before attempting to load the transcript
+            if (string.IsNullOrEmpty(fileName))
+            {
+                Debug.WriteLine("Failed to extract filename from transcription header");
+                return (new List<CutSpeakerModel>(), speakerId, $"{speaker?.FirstName} {speaker?.LastName}");
+            }
+            Debug.WriteLine($"Extracted filename from the transcript: {fileName}");
 
             // Load the transcript from memory
             string fullTranscriptText = await LoadTranscriptionFile(fileName);

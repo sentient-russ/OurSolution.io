@@ -63,18 +63,22 @@ namespace os.Services
             var result = new Dictionary<int, Dictionary<int, int>>();
 
             // Query database for page visits within the date range
+            // Only include visits to the home URL "/"
             var visits = _context.PageVisits
-                .Where(v => v.Timestamp >= startDate && v.Timestamp <= endDate)
+                .Where(v => v.Timestamp >= startDate &&
+                           v.Timestamp <= endDate &&
+                           v.Page == "/")
                 .ToList();
 
-            // Group visits by year and month, then count unique visitors
+            // Group visits by year and month, then count unique IP addresses (instead of visitor IDs)
             var visitorsByYearMonth = visits
                 .GroupBy(v => new { Year = v.Timestamp.Year, Month = v.Timestamp.Month })
                 .Select(g => new
                 {
                     g.Key.Year,
                     g.Key.Month,
-                    Count = g.Select(v => v.VisitorId).Distinct().Count()
+                    // Count unique IP addresses per month instead of visitor IDs
+                    Count = g.Select(v => v.IpAddress).Distinct().Count()
                 })
                 .ToList();
 

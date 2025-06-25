@@ -54,6 +54,7 @@
     <Folder Include="wwwroot\lib\jquery-validation\dist\" />
     <Folder Include="wwwroot\lib\jquery\" />
     <Folder Include="wwwroot\lib\jquery\dist\" />
+    <Folder Include="wwwroot\tmp\" />
     <Folder Include="wwwroot\transcriptions\" />
     <Folder Include="wwwroot\uploads\" />
   </ItemGroup>

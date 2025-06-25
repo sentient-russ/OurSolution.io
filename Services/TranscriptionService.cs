@@ -108,7 +108,7 @@ import os
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
 os.environ['HF_HUB_DISABLE_SYMLINKS_WARNING'] = '1'
 os.environ['PYTHONIOENCODING'] = 'utf-8'
-os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'max_split_size_mb:128,garbage_collection_threshold:0.6,expandable_segments:True'
+os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'max_split_size_mb:128'  # Removed incompatible options
 os.environ['CUDA_LAUNCH_BLOCKING'] = '1'  # For debugging CUDA issues
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 os.environ['OMP_NUM_THREADS'] = '1'
@@ -178,7 +178,7 @@ def transcribe(audio_path, output_path, model_size='small', use_gpu=False):
                 free_mem, total_mem = torch.cuda.mem_get_info(0)
                 free_mem_gb = free_mem / (1024**3)
                 
-                if free_mem_gb < 3.0:
+                if (free_mem_gb < 3.0):
                     print(f'WARNING: Low GPU memory ({free_mem_gb:.2f}GB free). Using more conservative settings.')
                     compute_type = 'int8'
                     
@@ -413,7 +413,7 @@ if __name__ == '__main__':
                 {
                     ["CUDA_VISIBLE_DEVICES"] = "0",
                     ["OMP_NUM_THREADS"] = "1",
-                    ["PYTORCH_CUDA_ALLOC_CONF"] = "garbage_collection_threshold:0.6,max_split_size_mb:128,expandable_segments:True",
+                    ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:128",  // Simplified configuration
                     ["HF_HUB_DISABLE_SYMLINKS_WARNING"] = "1",
                     ["PYTHONIOENCODING"] = "utf-8",
                     ["KMP_DUPLICATE_LIB_OK"] = "TRUE",

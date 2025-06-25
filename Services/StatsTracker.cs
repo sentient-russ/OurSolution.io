@@ -30,6 +30,12 @@ namespace os.Services
             var ipAddress = context.Request.Headers["X-Forwarded-For"].FirstOrDefault()
                           ?? context.Connection.RemoteIpAddress?.ToString();
 
+            // Skip tracking for localhost addresses
+            if (string.IsNullOrEmpty(ipAddress) || ipAddress == "127.0.0.1" || ipAddress == "::1")
+            {
+                return;
+            }
+
             if (!string.IsNullOrEmpty(ipAddress))
             {
                 _users.AddOrUpdate(ipAddress, DateTime.UtcNow, (_, _) => DateTime.UtcNow);
