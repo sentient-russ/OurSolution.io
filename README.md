@@ -47,7 +47,7 @@ Edit Announcement<br>
 <img width="750" alt="8" src="https://github.com/user-attachments/assets/4b0cc69a-47a5-4796-bff4-91764d52f739" />
 </p>
 <p align="center">
-Enable Announcement on Landing Page<br>
+Enabled Announcement on Landing Page<br>
 <img width="750" alt="9" src="https://github.com/user-attachments/assets/a117396e-c36b-41b3-ae9f-1a502e59701d" />
 </p>
 <p align="center">
